@@ -1,10 +1,10 @@
 # Assignment 1!
 
 ## Question we'll be Answering:
-How does the i
+What genes are pertinent to type two diabetes in pancreatic islet cells, and how are they related accross humans and mice?
 
 ## Dataset We'll be Using:
-https://www.refine.bio/experiments/GSE73072/host-gene-expression-signatures-of-h1n1-h3n2-hrv-rsv-virus-infection-in-adults
+[Type 2 Diabetes Gene Expression](https://www.refine.bio/experiments/SRP075377/rna-sequencing-of-single-human-islet-cells-reveals-type-2-diabetes-genes)
 
 ## Team Details
 - Rayyan Merchant
