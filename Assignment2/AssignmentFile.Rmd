@@ -1,0 +1,123 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+---
+
+## Welcome to Assignemnt 2, Data Exploration
+
+Below we've transcribed the assignment instructions with corresponding code blocks beneath each.
+
+```{r}
+# Install requisite libraries
+library(dplyr)
+library(tidyverse)
+#library(GEOquery) # ??? doesnt seem to exist
+library(readr)
+```
+
+### 1. Download the expression data and matching metadata from Refine.Bio that you selected in Assignment 1.
+
+-   You should have a matrix of samples by genes expression data If your matrix has Ensembl IDs (e.g. ENSG00000141510) instead of Hugo gene names (e.g. TP53), convert the names following these directions:
+
+    -   alexslemonade.github.io/refinebio-examples/03-rnaseq/gene-id-annotation_rnaseq_01_ensembl.html bioconductor.org/help/course-materials/2019/BSS2019/05_Annotations.html - org.hs.eg.db
+
+-   Load the data into R.
+
+```{r}
+# Create the data folder if it doesn't exist
+if (!dir.exists("data")) {
+  dir.create("data")
+}
+
+# Define the file path to the plots directory
+plots_dir <- "plots"
+
+# Create the plots folder if it doesn't exist
+if (!dir.exists(plots_dir)) {
+  dir.create(plots_dir)
+}
+
+# Define the file path to the results directory
+results_dir <- "results"
+
+# Create the results folder if it doesn't exist
+if (!dir.exists(results_dir)) {
+  dir.create(results_dir)
+}
+
+# Define the file path to the data directory
+# Replace with the path of the folder the files will be in
+data_dir <- file.path("data", "SRP075377")
+
+# Declare the file path to the gene expression matrix file
+# inside directory saved as `data_dir`
+# Replace with the path to your dataset file
+data_file <- file.path(data_dir, "SRP075377.tsv")
+
+# Declare the file path to the metadata file
+# inside the directory saved as `data_dir`
+# Replace with the path to your metadata file
+metadata_file <- file.path(data_dir, "metadata_SRP075377.tsv")
+
+# Check if the gene expression matrix file is at the path stored in `data_file`
+file.exists(data_file)
+
+# Check if the metadata file is at the file path stored in `metadata_file`
+file.exists(metadata_file)
+```
+
+What size is your expression matrix?
+
+How many genes does it include?
+
+How much variation do you see in the data?
+
+To answer these questions, log-scale the data,
+
+calculate per-gene median expression ranges,
+
+then make a density plot showing those results.
+
+Summarize your findings.
+
+### 2. Now that you have loaded the expression data into R, generate a PCA plot:
+
+-   If you have counts file(s), follow these DESeq2 directions to generate an expression matrix.
+-   Use the DESeq2 function plotPCA() to generate your plot (see here)
+-   Color your plot by the 2 groups you identified in assignment 1 (e.g., cancer vs normal)
+-   Make sure you include a legend and label the axes!
+-   If you have 3 or 4 students in your group, also generate either t-SNE or UMAP plot, and summarize the differences and similarities between your two plots.
+-   t-SNE (example here)
+-   UMAP (example here)
+-   Save your plot(s) and summarize your findings.
+
+### 3. Perform differential analysis on the samples from your two groups, following the directions below
+
+-   alexslemonade.github.io/refinebio-examples/03-rnaseq/differential-expression_rnaseq_01.html
+-   Create a volcano plot of your data, following the directions above
+-   Create a table of differentially expressed genes.
+-   Save and summarize your findings.
+
+### 4. Extract the list of significantly differentially expressed genes, and generate a heatmap using ComplexHeatmap
+
+-   Package reference (<https://jokergoo.github.io/ComplexHeatmap-reference/book/>)
+-   Add a side bar colored by sample groupings (cancer vs not, etc.)
+-   Extract the list of differentially expressed genes and run enrichment analysis. Each student in your team should run a different method OR ontology (e.g., if there are 4 students on the team, there should be results for 4 applications in your assignment writeup).
+-   Choose a method:
+    -   topGO
+    -   clustProfiler
+    -   gProfiler2
+    -   GenomicSuperSignature
+    -   Choose an ontology (e.g. Disease Ontology, Gene Ontology)
+
+### 5. Run enrichment analysis on your data using your selected method and ontology
+
+### 6. Create a table of the enriched processes found for each method in step 4 (one table per method). Create a table showing statistically significantly enriched terms and any characteristics shared by the method you used (e.g., q-value, p-value, log fold change)
+
+### 7. Write a short summary to go with each plot/table you create. Describe what you did, what parameters you used (if any) and an interesting result from it.
+
+As a team, fill out the team evaluation table below.
+
+### 8. Combine all into a single file and submit on Canvas. Make sure that all your code is added to your GitHub repository.
