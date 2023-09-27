@@ -1626,6 +1626,13 @@ display: none;
 
 <div id="welcome-to-assignemnt-2-data-exploration" class="section level2">
 <h2>Welcome to Assignemnt 2, Data Exploration</h2>
+</div>
+<div id="instructions" class="section level1">
+<h1>Instructions:</h1>
+<p>Beyond simply running the code below, please insert your data files
+in the data directory such that the single folder from refine.bio
+containing the metadata TSV and main TSV file are present in the
+immediate subdirectory. This can be downloaded from google drive, <a href="https://drive.google.com/file/d/1aOnupOgIn-b7rSoGdRflNBvpfQPcR5v5/view?usp=sharing" title="Download folder to be unzipped as subdirectory of Data!">here!</a></p>
 <p>Below we’ve transcribed the assignment instructions with
 corresponding code blocks beneath each.</p>
 <pre class="r"><code># Install requisite libraries
@@ -1654,7 +1661,7 @@ library(readr)</code></pre>
 <h3>1. Download the expression data and matching metadata from
 Refine.Bio that you selected in Assignment 1.</h3>
 <ul>
-<li><p>You should have a matrix of samples by genes expression data If
+<li><p>You should have a matrix of samples by genes expression data. If
 your matrix has Ensembl IDs (e.g. ENSG00000141510) instead of Hugo gene
 names (e.g. TP53), convert the names following these directions:</p>
 <ul>
@@ -1705,7 +1712,164 @@ file.exists(data_file)</code></pre>
 <pre class="r"><code># Check if the metadata file is at the file path stored in `metadata_file`
 file.exists(metadata_file)</code></pre>
 <pre><code>## [1] TRUE</code></pre>
+<p>This next step loads the data and annotation libraries which may take
+from 30 seconds to 2 minutes.</p>
+<pre class="r"><code># Install the Zebrafish package
+if (!(&quot;org.Hs.eg.db&quot; %in% installed.packages())) {
+  # Install this package if it isn&#39;t installed yet
+  BiocManager::install(&quot;org.Hs.eg.db&quot;, update = FALSE)
+}
+
+# Attach the library
+library(org.Hs.eg.db)</code></pre>
+<pre><code>## Loading required package: AnnotationDbi</code></pre>
+<pre><code>## Loading required package: stats4</code></pre>
+<pre><code>## Loading required package: BiocGenerics</code></pre>
+<pre><code>## 
+## Attaching package: &#39;BiocGenerics&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:lubridate&#39;:
+## 
+##     intersect, setdiff, union</code></pre>
+<pre><code>## The following objects are masked from &#39;package:dplyr&#39;:
+## 
+##     combine, intersect, setdiff, union</code></pre>
+<pre><code>## The following objects are masked from &#39;package:stats&#39;:
+## 
+##     IQR, mad, sd, var, xtabs</code></pre>
+<pre><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     anyDuplicated, aperm, append, as.data.frame, basename, cbind,
+##     colnames, dirname, do.call, duplicated, eval, evalq, Filter, Find,
+##     get, grep, grepl, intersect, is.unsorted, lapply, Map, mapply,
+##     match, mget, order, paste, pmax, pmax.int, pmin, pmin.int,
+##     Position, rank, rbind, Reduce, rownames, sapply, setdiff, sort,
+##     table, tapply, union, unique, unsplit, which.max, which.min</code></pre>
+<pre><code>## Loading required package: Biobase</code></pre>
+<pre><code>## Welcome to Bioconductor
+## 
+##     Vignettes contain introductory material; view with
+##     &#39;browseVignettes()&#39;. To cite Bioconductor, see
+##     &#39;citation(&quot;Biobase&quot;)&#39;, and for packages &#39;citation(&quot;pkgname&quot;)&#39;.</code></pre>
+<pre><code>## Loading required package: IRanges</code></pre>
+<pre><code>## Loading required package: S4Vectors</code></pre>
+<pre><code>## 
+## Attaching package: &#39;S4Vectors&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:lubridate&#39;:
+## 
+##     second, second&lt;-</code></pre>
+<pre><code>## The following object is masked from &#39;package:tidyr&#39;:
+## 
+##     expand</code></pre>
+<pre><code>## The following objects are masked from &#39;package:dplyr&#39;:
+## 
+##     first, rename</code></pre>
+<pre><code>## The following object is masked from &#39;package:utils&#39;:
+## 
+##     findMatches</code></pre>
+<pre><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     expand.grid, I, unname</code></pre>
+<pre><code>## 
+## Attaching package: &#39;IRanges&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:lubridate&#39;:
+## 
+##     %within%</code></pre>
+<pre><code>## The following object is masked from &#39;package:purrr&#39;:
+## 
+##     reduce</code></pre>
+<pre><code>## The following objects are masked from &#39;package:dplyr&#39;:
+## 
+##     collapse, desc, slice</code></pre>
+<pre><code>## The following object is masked from &#39;package:grDevices&#39;:
+## 
+##     windows</code></pre>
+<pre><code>## 
+## Attaching package: &#39;AnnotationDbi&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:dplyr&#39;:
+## 
+##     select</code></pre>
+<pre><code>## </code></pre>
+<pre class="r"><code># We will need this so we can use the pipe: %&gt;%
+library(magrittr)</code></pre>
+<pre><code>## 
+## Attaching package: &#39;magrittr&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:purrr&#39;:
+## 
+##     set_names</code></pre>
+<pre><code>## The following object is masked from &#39;package:tidyr&#39;:
+## 
+##     extract</code></pre>
+<pre class="r"><code># Read in data and metadata  TSV file
+metadata &lt;- readr::read_tsv(metadata_file)</code></pre>
+<pre><code>## Rows: 1600 Columns: 24</code></pre>
+<pre><code>## ── Column specification ────────────────────────────────────────────────────────
+## Delimiter: &quot;\t&quot;
+## chr (12): refinebio_accession_code, experiment_accession, refinebio_organism...
+## dbl  (3): refinebio_age, refinebio_processor_id, MetaSRA_age
+## lgl  (9): refinebio_cell_line, refinebio_compound, refinebio_disease, refine...
+## 
+## ℹ Use `spec()` to retrieve the full column specification for this data.
+## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<pre class="r"><code>expression_df &lt;- readr::read_tsv(data_file) %&gt;%
+  # Tuck away the Gene ID column as row names
+  tibble::column_to_rownames(&quot;Gene&quot;)</code></pre>
+<pre><code>## Rows: 43363 Columns: 1601
+## ── Column specification ────────────────────────────────────────────────────────
+## Delimiter: &quot;\t&quot;
+## chr    (1): Gene
+## dbl (1600): SRR3541303, SRR3541304, SRR3541305, SRR3541306, SRR3541307, SRR3...
+## 
+## ℹ Use `spec()` to retrieve the full column specification for this data.
+## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<pre class="r"><code>#Seemingly like a left-join
+# Make the data in the order of the metadata
+expression_df &lt;- expression_df %&gt;%
+  dplyr::select(metadata$refinebio_accession_code)
+
+# Check if this is in the same order
+all.equal(colnames(expression_df), metadata$refinebio_accession_code)</code></pre>
+<pre><code>## [1] TRUE</code></pre>
+<pre class="r"><code># Bring back the &quot;Gene&quot; column in preparation for mapping
+expression_df &lt;- expression_df %&gt;%
+  tibble::rownames_to_column(&quot;Gene&quot;)
+
+
+# Map Ensembl IDs to their associated Entrez IDs
+mapped_list &lt;- mapIds(
+  org.Hs.eg.db, # Replace with annotation package for your organism
+  keys = expression_df$Gene,
+  keytype = &quot;ENSEMBL&quot;, # Replace with the type of gene identifiers in your data
+  column = &quot;ENTREZID&quot;, # The type of gene identifiers you would like to map to
+  multiVals = &quot;list&quot;
+)</code></pre>
+<pre><code>## &#39;select()&#39; returned 1:many mapping between keys and columns</code></pre>
+<pre class="r"><code>head(mapped_list) #Yay! It works!</code></pre>
+<pre><code>## $ENSG00000000003
+## [1] &quot;7105&quot;
+## 
+## $ENSG00000000005
+## [1] &quot;64102&quot;
+## 
+## $ENSG00000000419
+## [1] &quot;8813&quot;
+## 
+## $ENSG00000000457
+## [1] &quot;57147&quot;
+## 
+## $ENSG00000000460
+## [1] &quot;55732&quot;
+## 
+## $ENSG00000000938
+## [1] &quot;2268&quot;</code></pre>
+<pre class="r"><code># Let&#39;s make our list a bit more manageable by turning it into a data frame
+mapped_df &lt;- mapped_list %&gt;%
+  tibble::enframe(name = &quot;Ensembl&quot;, value = &quot;Entrez&quot;) %&gt;%
+  # enframe() makes a `list` column; we will simplify it with unnest()
+  # This will result in one row of our data frame per list item
+  tidyr::unnest(cols = Entrez)</code></pre>
 <p>What size is your expression matrix?</p>
+<pre class="r"><code>dim(data)</code></pre>
+<pre><code>## NULL</code></pre>
 <p>How many genes does it include?</p>
 <p>How much variation do you see in the data?</p>
 <p>To answer these questions, log-scale the data,</p>
