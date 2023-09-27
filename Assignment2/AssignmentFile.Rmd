@@ -210,8 +210,70 @@ The range density plot shows an intriguing bimodal distribution. A large group o
 ### 3. Perform differential analysis on the samples from your two groups, following the directions below
 
 -   alexslemonade.github.io/refinebio-examples/03-rnaseq/differential-expression_rnaseq_01.html
+
 -   Create a volcano plot of your data, following the directions above
+
+    ```{r include=FALSE}
+    # First let's install the requisite libraries.
+    if (!("DESeq2" %in% installed.packages())) {
+      # Install this package if it isn't installed yet
+      BiocManager::install("DESeq2", update = FALSE)
+    }
+    if (!("EnhancedVolcano" %in% installed.packages())) {
+      # Install this package if it isn't installed yet
+      BiocManager::install("EnhancedVolcano", update = FALSE)
+    }
+    if (!("apeglm" %in% installed.packages())) {
+      # Install this package if it isn't installed yet
+      BiocManager::install("apeglm", update = FALSE)
+    }
+
+    # Attach the DESeq2 library
+    library(DESeq2)
+
+    # Attach the ggplot2 library for plotting
+    library(ggplot2)
+
+    # We will need this so we can use the pipe: %>%
+    library(magrittr)
+    ```
+
+    Alright, let's prep the metadata to better select what we need.
+
+    ```{r}
+
+    metadata <- metadata %>%
+      dplyr::mutate(diabetes = dplyr::case_when(
+        stringr::str_detect(refinebio_subject, "non t2d") ~ "reference",
+        stringr::str_detect(refinebio_subject, "t2d") ~ "diabetic",
+      ))
+
+    #Remove ambiguously-labeled samples from metadata
+    culledMeta <- metadata[!(metadata$refinebio_subject=="pancreatic islets"),]
+
+    discardColumns <- metadata[(metadata$refinebio_subject=="pancreatic islets"),]
+    discardColumns = as.vector(discardColumns$refinebio_accession_code)
+    #Preserve only columns in expression_df that match one of the accession ids
+    culled_expression_df = expression_df[,!(names(expression_df) %in% discardColumns)]
+
+    # Make mutation_status a factor and set the levels appropriately
+    culledMeta <- culledMeta %>%
+      dplyr::mutate(
+        # Here we define the values our factor variable can have and their order.
+        diabetes = factor(diabetes, levels = c("reference", "diabetic"))
+      )
+    ```
+
+    Volcano plot time.
+
+-   
+
 -   Create a table of differentially expressed genes.
+
+    ```{r}
+
+    ```
+
 -   Save and summarize your findings.
 
 ### 4. Extract the list of significantly differentially expressed genes, and generate a heatmap using ComplexHeatmap
