@@ -7,6 +7,10 @@ output:
 
 ## Welcome to Assignemnt 2, Data Exploration
 
+# Instructions:
+
+Beyond simply running the code below, please insert your data files in the data directory such that the single folder from refine.bio containing the metadata TSV and main TSV file are present in the immediate subdirectory. This can be downloaded from google drive, [here!](https://drive.google.com/file/d/1aOnupOgIn-b7rSoGdRflNBvpfQPcR5v5/view?usp=sharing "Download folder to be unzipped as subdirectory of Data!")
+
 Below we've transcribed the assignment instructions with corresponding code blocks beneath each.
 
 ```{r}
@@ -19,7 +23,7 @@ library(readr)
 
 ### 1. Download the expression data and matching metadata from Refine.Bio that you selected in Assignment 1.
 
--   You should have a matrix of samples by genes expression data If your matrix has Ensembl IDs (e.g. ENSG00000141510) instead of Hugo gene names (e.g. TP53), convert the names following these directions:
+-   You should have a matrix of samples by genes expression data. If your matrix has Ensembl IDs (e.g. ENSG00000141510) instead of Hugo gene names (e.g. TP53), convert the names following these directions:
 
     -   alexslemonade.github.io/refinebio-examples/03-rnaseq/gene-id-annotation_rnaseq_01_ensembl.html bioconductor.org/help/course-materials/2019/BSS2019/05_Annotations.html - org.hs.eg.db
 
@@ -68,7 +72,23 @@ file.exists(data_file)
 file.exists(metadata_file)
 ```
 
+This next step loads the data, which may take from 30 seconds to 2 minutes.
+
+```{r}
+data <- read.delim(data_file, sep = "\t")
+```
+
+Let's also load the metadata:
+
+```{r}
+metadata <- readr::read_tsv(metadata_file)
+```
+
 What size is your expression matrix?
+
+```{r}
+dim(data)
+```
 
 How many genes does it include?
 
