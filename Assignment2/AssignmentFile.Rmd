@@ -7,6 +7,10 @@ output:
 
 ## Welcome to Assignemnt 2, Data Exploration
 
+# Instructions:
+
+Beyond simply running the code below, please insert your data files in the data directory such that the single folder from refine.bio containing the metadata TSV and main TSV file are present in the immediate subdirectory. This can be downloaded from google drive, [here!](https://drive.google.com/file/d/1aOnupOgIn-b7rSoGdRflNBvpfQPcR5v5/view?usp=sharing "Download folder to be unzipped as subdirectory of Data!")
+
 Below we've transcribed the assignment instructions with corresponding code blocks beneath each.
 
 ```{r}
@@ -19,7 +23,7 @@ library(readr)
 
 ### 1. Download the expression data and matching metadata from Refine.Bio that you selected in Assignment 1.
 
--   You should have a matrix of samples by genes expression data If your matrix has Ensembl IDs (e.g. ENSG00000141510) instead of Hugo gene names (e.g. TP53), convert the names following these directions:
+-   You should have a matrix of samples by genes expression data. If your matrix has Ensembl IDs (e.g. ENSG00000141510) instead of Hugo gene names (e.g. TP53), convert the names following these directions:
 
     -   alexslemonade.github.io/refinebio-examples/03-rnaseq/gene-id-annotation_rnaseq_01_ensembl.html bioconductor.org/help/course-materials/2019/BSS2019/05_Annotations.html - org.hs.eg.db
 
@@ -68,19 +72,129 @@ file.exists(data_file)
 file.exists(metadata_file)
 ```
 
-What size is your expression matrix?
+This next step loads the data and annotation libraries which may take from 30 seconds to 2 minutes.
 
-How many genes does it include?
+```{r}
+# Install the Zebrafish package
+if (!("org.Hs.eg.db" %in% installed.packages())) {
+  # Install this package if it isn't installed yet
+  BiocManager::install("org.Hs.eg.db", update = FALSE)
+}
 
-How much variation do you see in the data?
+# Attach the library
+library(org.Hs.eg.db)
 
-To answer these questions, log-scale the data,
+# We will need this so we can use the pipe: %>%
+library(magrittr)
 
-calculate per-gene median expression ranges,
+# Read in data and metadata  TSV file
+metadata <- readr::read_tsv(metadata_file)
+expression_df <- readr::read_tsv(data_file) %>%
+  # Tuck away the Gene ID column as row names
+  tibble::column_to_rownames("Gene")
 
-then make a density plot showing those results.
+#Seemingly like a left-join
+# Make the data in the order of the metadata
+expression_df <- expression_df %>%
+  dplyr::select(metadata$refinebio_accession_code)
 
-Summarize your findings.
+# Check if this is in the same order
+all.equal(colnames(expression_df), metadata$refinebio_accession_code)
+
+# Bring back the "Gene" column in preparation for mapping
+expression_df <- expression_df %>%
+  tibble::rownames_to_column("Gene")
+
+
+# Map Ensembl IDs to their associated Entrez IDs
+mapped_list <- mapIds(
+  org.Hs.eg.db, # Replace with annotation package for your organism
+  keys = expression_df$Gene,
+  keytype = "ENSEMBL", # Replace with the type of gene identifiers in your data
+  column = "ENTREZID", # The type of gene identifiers you would like to map to
+  multiVals = "list"
+)
+```
+
+```{r}
+head(mapped_list) #Amazing.
+```
+
+```{r}
+# Let's make our list a bit more manageable by turning it into a data frame
+mapped_df <- mapped_list %>%
+  tibble::enframe(name = "Ensembl", value = "Entrez") %>%
+  # enframe() makes a `list` column; we will simplify it with unnest()
+  # This will result in one row of our data frame per list item
+  tidyr::unnest(cols = Entrez)
+```
+
+#### What size is your expression matrix?
+
+```{r}
+dim(expression_df)
+```
+
+#### How many genes does it include?
+
+a: 43363 ensembl IDs OR 44380 Entrez IDs. 13996 Ensembl's had no ENTREZ IDs, but some mapped to many...
+
+```{r}
+summary(as.factor(mapped_df$Entrez), maxsum = 5)
+```
+
+```{r}
+multi_mapped <- mapped_df %>%
+  # Let's count the number of times each Ensembl ID appears in `Ensembl` column
+  dplyr::count(Ensembl, name = "entrez_id_count") %>%
+  # Arrange by the genes with the highest number of Entrez IDs mapped
+  dplyr::arrange(desc(entrez_id_count))
+
+# Let's look at the first 6 rows of our `multi_mapped` object
+head(multi_mapped)
+```
+
+Looks like some ensemblIDs mapped to as many as 210 Entrez IDs...
+
+#### How much variation do you see in the data? To answer these questions, log-scale the data, calculate per-gene median expression ranges, then make a density plot showing those results.
+
+```{r}
+#Log scale the data
+
+logscaleData <- expression_df
+logscaleData[, -1] <- log(logscaleData[, -1])
+logscaleData$median = apply(logscaleData[, -1], 1, median)
+
+calculate_range <- function(row) {
+  max_value <- max(row)
+  min_value <- min(row)
+  range_value <- max_value - min_value
+  return(range_value)
+}
+
+# Apply the function to each row of the matrix
+logscaleData$row_ranges <- apply(logscaleData[,-1], 1, calculate_range)
+
+```
+
+```{r}
+justPlotThis <- dplyr::select(logscaleData, columns="Gene", "median", "row_ranges")
+justPlotThis <- justPlotThis %>% 
+  dplyr::rename(
+    Genes = columns,
+    Median = median,
+    Range = row_ranges,
+    )
+
+plot(density(justPlotThis$Median))
+plot(density(justPlotThis$Range))
+```
+
+#### Summarize your findings.
+
+The majority of the genes show negative median log-scaled expression, implying a lack of correlation. However, a group can be seen with values near 1-2 on the median log scale. These imply that the genes in this group are those which, relative to other genes gathered from the pancreatic islet cells samples, are being expressed the most. This stands against no particular control, however, and so does not yield any meaningful conclusions of the genes at hand being diabetic, but rather just genes that are expressed more.
+
+The range density plot shows an intriguing bimodal distribution. A large group of genes has a minimal range, whereas the majority of the genes fall close to a range of 3.5 (log scale) in expression between samples. Genes with a low variability across all samples are not interesting since this data set contains both diabetic and control patients.
 
 ### 2. Now that you have loaded the expression data into R, generate a PCA plot:
 
