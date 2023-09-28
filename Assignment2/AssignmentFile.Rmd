@@ -571,46 +571,31 @@ merged <- merged[,c("refinebio_subject", deseq_df_enr$Gene)]
 
 ```{r}
 #group by refinebio subject
-merged <- aggregate(merged, list(merged$refinebio_subject), FUN=mean)
-merged <- merged[-c(2)] %>% 
+new_merged <- aggregate(merged, list(merged$refinebio_subject), FUN=mean)
+new_merged <- new_merged[order(new_merged$Group.1),]
+new_merged <- new_merged[-c(2)] %>% 
   column_to_rownames(var="Group.1")
 
 row_names_df_to_remove<-c("pancreatic islets")
-merged <- merged[!(row.names(merged) %in% row_names_df_to_remove),]
+new_merged <- new_merged[!(row.names(new_merged) %in% row_names_df_to_remove),]
 ```
 
 ```{r}
 
 #heatmap
-ht = ComplexHeatmap::Heatmap(merged)
+
+ht = ComplexHeatmap::Heatmap(new_merged,heatmap_legend_param = list(
+        title = "Expression", at = c(0, 50, 100,150)
+    ),column_title = "Significantly Differentially Expressed Genes Heatmap",show_column_names = FALSE,cluster_columns = FALSE,cluster_rows = FALSE)
 ComplexHeatmap::draw(ht)
 ```
 
-#### HEATMAP SUMMARY:
+### HEATMAP SUMMARY:
 
-Due to a number of limitations and obstacles we encountered over the
-course of doing task #4, we have not included a heatmap using
-ComplexHeatmap, although we did generate several test Heatmaps. In terms
-of data, we faced a performance bottleneck due to the extremely large
-amount of genes present in our dataset, and so our devices took
-extremely long periods of time to calculate even basic heat maps. In
-addition, the premise of seprating genes in the sidebar based on their
-relationship to diabetic/nondiabetic samples was somewhat confusing
-because such a binary value is contradictory with the purpose of a
-heatmap. Several youtube resources guided us towards instead attemmpting
-to reduce our sample size, but this proved very challenging. Had we more
-time, we'd attempted the following: - Transpose original data - Left
-join meta data on Accession Code - Group by refineBio_subject, averaging
-accross genes within subject groups to achieve mean expressions - Omit
-all further columns - transpose data back, and plot with X axis of 20
-subjects, y axis of 355 most significant genes, and a heatmap of
-log2fold diff expression.
+To create this Heatmap, we used ComplexHeatmap and simply aligned our raw data with the significantly expressed gene table, then fed in only the significantly expressed gene data to ComplexHeatmap. We also grouped this data by the subject, with "non t2d" denoting a subject without Type 2 Diabetes and "t2d" denoting a subject with diabetes. We found that ComplexHeatmap's default settings clustered the rows and columns so that they appeared in a different order than how they appear in the input table. To fix this, we set cluster to FALSE for both rows and columns.
 
-We provide the original code for our initial, very crude Heatmap, to
-demonstrate our usage of ComplexHeatmap in this task. We hope that the
-profoundly large dataset we use and the additional challenges faced in
-attempting such aggregation will be considered in our failure to produce
-a meaningful output.
+Based on this heatmap from our significantly expressed gene data, there does appear to be some degree of difference between how certain groups of genes are expressed across the subjects with diabetes and those without. Interestingly, there appear to be differences in how diabetes is expressed within the diabetes groups, with subjects 1,2, and 3 differing from subjects 4,5, and 6. A similar division within the non-diabetes group, if it exists, does not appear to be quite as apparent.
+
 
 ### 5. Run enrichment analysis on your data using your selected method and ontology
 
