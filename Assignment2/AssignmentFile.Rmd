@@ -242,6 +242,9 @@ The range density plot shows an intriguing bimodal distribution. A large group o
 
     ```{r}
 
+    new_expression_df <- readr::read_tsv(data_file) %>%
+      tibble::column_to_rownames("Gene")
+
     metadata <- metadata %>%
       dplyr::mutate(diabetes = dplyr::case_when(
         stringr::str_detect(refinebio_subject, "non t2d") ~ "reference",
@@ -253,8 +256,9 @@ The range density plot shows an intriguing bimodal distribution. A large group o
 
     discardColumns <- metadata[(metadata$refinebio_subject=="pancreatic islets"),]
     discardColumns = as.vector(discardColumns$refinebio_accession_code)
+    length(discardColumns)
     #Preserve only columns in expression_df that match one of the accession ids
-    culled_expression_df = expression_df[,!(names(expression_df) %in% discardColumns)]
+    culled_expression_df = new_expression_df[,!(names(new_expression_df) %in% discardColumns)]
 
     # Make mutation_status a factor and set the levels appropriately
     culledMeta <- culledMeta %>%
@@ -266,22 +270,92 @@ The range density plot shows an intriguing bimodal distribution. A large group o
 
     Volcano plot time.
 
--   
-
--   Create a table of differentially expressed genes.
-
     ```{r}
 
+    filtered_expression_df <- culled_expression_df %>%
+      dplyr::filter(rowSums(.) >= 4000)
+
+    #This culls roughly 35000 genes that show insignificant expression.
+
+    gene_matrix <- round(filtered_expression_df)
+    ddset <- DESeqDataSetFromMatrix(
+      # Here we supply non-normalized count data
+      countData = gene_matrix,
+      # Supply the `colData` with our metadata data frame
+      colData = culledMeta,
+      # Supply our experimental variable to `design`
+      design = ~diabetes
+    )
+    ```
+
+    ```{r}
+    #This WILL take some time. To reduce it down from a minute, use adjust the number on the third line of the above cell. The higher, the more genes filtered out, the shorter DESeq will take but the worse the volcano plot will be.
+    deseq_object <- DESeq(ddset)
+    ```
+
+    ```{r}
+    deseq_results <- results(deseq_object)
+    deseq_results <- lfcShrink(
+      deseq_object, # The original DESeq2 object after running DESeq()
+      coef = 2, # The log fold change coefficient used in DESeq(); the default is 2.
+      res = deseq_results # The original DESeq2 results table
+    )
+
+    # this is of class DESeqResults -- we want a data frame
+    deseq_df <- deseq_results %>%
+      # make into data.frame
+      as.data.frame() %>%
+      # the gene names are row names -- let's make them a column for easy display
+      tibble::rownames_to_column("Gene") %>%
+      # add a column for significance threshold results
+      dplyr::mutate(threshold = padj < 0.05) %>%
+      # sort by statistic -- the highest values will be genes with
+      # higher expression in RPL10 mutated samples
+      dplyr::arrange(dplyr::desc(log2FoldChange))
+
+
+
+    volcano_plot <- EnhancedVolcano::EnhancedVolcano(
+      deseq_df,
+      lab = deseq_df$Gene,
+      x = "log2FoldChange",
+      y = "padj",
+      pCutoff = 0.01 # Loosen the cutoff since we supplied corrected p-values
+    )
+    # Print out plot here
+    volcano_plot
+    ```
+
+-   reate a table of differentially expressed genes.
+
+    ```{r}
+    deseq_df
     ```
 
 -   Save and summarize your findings.
 
+    ```{r}
+    readr::write_tsv(
+      deseq_df,
+      file.path(
+        results_dir,
+        "diff_expr_results.tsv" # Replace with a relevant output file name
+      )
+    )
+    ```
+
+It seems a handful of genes have stood out as having significant fold change in bot the positive and negative direction relative to the control. Of the 6827 genes examined, 357 meet the threshold discovered for significant change in differential expression, visualized as north of the grey line towards the bottom of the volcano plot. Some are exceptionally negative / positive, and are labeled for their uniqueness.
+
 ### 4. Extract the list of significantly differentially expressed genes, and generate a heatmap using ComplexHeatmap
 
 -   Package reference (<https://jokergoo.github.io/ComplexHeatmap-reference/book/>)
+
 -   Add a side bar colored by sample groupings (cancer vs not, etc.)
+
 -   Extract the list of differentially expressed genes and run enrichment analysis. Each student in your team should run a different method OR ontology (e.g., if there are 4 students on the team, there should be results for 4 applications in your assignment writeup).
+
 -   Choose a method:
+
     -   topGO
     -   clustProfiler
     -   gProfiler2
