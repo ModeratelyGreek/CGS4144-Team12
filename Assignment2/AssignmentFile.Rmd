@@ -10,9 +10,17 @@ output:
 
 # Instructions:
 
-Beyond simply running the code below, please insert your data files in the data directory such that the single folder from refine.bio containing the metadata TSV and main TSV file are present in the immediate subdirectory. This can be downloaded from google drive, [here!](https://drive.google.com/file/d/1aOnupOgIn-b7rSoGdRflNBvpfQPcR5v5/view?usp=sharing "Download folder to be unzipped as subdirectory of Data!")
+[Beyond simply running the code below, please insert your data files in the data directory such that the single folder from refine.bio containing the metadata TSV and main TSV file are present in the immediate subdirectory. This can be downloaded from google drive, [here!](https://drive.google.com/file/d/1aOnupOgIn-b7rSoGdRflNBvpfQPcR5v5/view?usp=sharing "Download folder to be unzipped as subdirectory of Data!")]{.underline}
 
-Below we've transcribed the assignment instructions with corresponding code blocks beneath each.
+[Below we've transcribed the assignment instructions with corresponding code blocks beneath each.]{.underline}
+
+[🚨Please note,]{.underline}
+
+-   [underlined writing implies it is from us and not the instructions]{.underline}
+
+-   [numerous code blocks were directly excerpted, adapted, and reused from the provided instructions / guidance. We do not believe this to be plagiarism and hope that in declaring it up front we demonstrate our honest intent. The sources used are found in the instructions (which are transcribed in full on this document), and due to how closely the guidance reflected the tasks of the assignment, we felt it wholly appropriate to directly use the best practices provided directly to us for this purpose.]{.underline}
+
+-   [Task 7: Annotating our tables, has been performed inline, in a more traditional notebook manner. We do not reserve the annotations for step 7 and instead hope to meet the criteria by elaborating on all provided images and tables directly adjacent to each.]{.underline}
 
 ```{r}
 # Install requisite libraries
@@ -75,7 +83,7 @@ file.exists(metadata_file)
 
 This next step loads the data and annotation libraries which may take from 30 seconds to 2 minutes.
 
-```{r}
+```{r include=FALSE}
 # Install the Zebrafish package
 if (!("org.Hs.eg.db" %in% installed.packages())) {
   # Install this package if it isn't installed yet
@@ -121,7 +129,7 @@ mapped_list <- mapIds(
 head(mapped_list) #Amazing.
 ```
 
-```{r}
+```{r include=FALSE}
 # Let's make our list a bit more manageable by turning it into a data frame
 mapped_df <- mapped_list %>%
   tibble::enframe(name = "Ensembl", value = "Entrez") %>%
@@ -130,15 +138,15 @@ mapped_df <- mapped_list %>%
   tidyr::unnest(cols = Entrez)
 ```
 
-#### What size is your expression matrix?
+What size is your expression matrix?
 
-```{r}
+```{r }
 dim(expression_df)
 ```
 
-#### How many genes does it include?
+How many genes does it include?
 
-a: 43363 ensembl IDs OR 44380 Entrez IDs. 13996 Ensembl's had no ENTREZ IDs, but some mapped to many...
+[43363 ensembl IDs OR 44380 Entrez IDs. 13996 Ensembl's had no ENTREZ IDs, but some mapped to many...]{.underline}
 
 ```{r}
 summary(as.factor(mapped_df$Entrez), maxsum = 5)
@@ -155,11 +163,11 @@ multi_mapped <- mapped_df %>%
 head(multi_mapped)
 ```
 
-Looks like some ensemblIDs mapped to as many as 210 Entrez IDs...
+[Looks like some ensemblIDs mapped to as many as 210 Entrez IDs...]{.underline}
 
-#### How much variation do you see in the data? To answer these questions, log-scale the data, calculate per-gene median expression ranges, then make a density plot showing those results.
+How much variation do you see in the data? To answer these questions, log-scale the data, calculate per-gene median expression ranges, then make a density plot showing those results.
 
-```{r}
+```{r include=FALSE}
 #Log scale the data
 
 logscaleData <- expression_df
@@ -188,14 +196,17 @@ justPlotThis <- justPlotThis %>%
     )
 
 plot(density(justPlotThis$Median))
-plot(density(justPlotThis$Range))
 ```
 
 #### Summarize your findings.
 
-The majority of the genes show negative median log-scaled expression, implying a lack of correlation. However, a group can be seen with values near 1-2 on the median log scale. These imply that the genes in this group are those which, relative to other genes gathered from the pancreatic islet cells samples, are being expressed the most. This stands against no particular control, however, and so does not yield any meaningful conclusions of the genes at hand being diabetic, but rather just genes that are expressed more.
+[The majority of the genes show negative median log-scaled expression, implying a lack of correlation. However, a group can be seen with values near 1-2 on the median log scale. These imply that the genes in this group are those which, relative to other genes gathered from the pancreatic islet cells samples, are being expressed the most. This stands against no particular control, however, and so does not yield any meaningful conclusions of the genes at hand being diabetic, but rather just genes that are expressed more.]{.underline}
 
-The range density plot shows an intriguing bimodal distribution. A large group of genes has a minimal range, whereas the majority of the genes fall close to a range of 3.5 (log scale) in expression between samples. Genes with a low variability across all samples are not interesting since this data set contains both diabetic and control patients.
+```{r}
+plot(density(justPlotThis$Range))
+```
+
+[The range density plot shows an intriguing bimodal distribution. A large group of genes has a minimal range, whereas the majority of the genes fall close to a range of 3.5 (log scale) in expression between samples. Genes with a low variability across all samples are not interesting since this data set contains both diabetic and control patients.]{.underline}
 
 ### 2. Now that you have loaded the expression data into R, generate a PCA plot:
 
@@ -388,7 +399,9 @@ Each student in your team should run a different method OR ontology (e.g., if th
 
 ### 7. Write a short summary to go with each plot/table you create. Describe what you did, what parameters you used (if any) and an interesting result from it.
 
-As a team, fill out the team evaluation table below.
+## As a team, fill out the team evaluation table below.
+
+![](https://cdn.discordapp.com/attachments/1148297410318176256/1156784591059816558/image.png?ex=65163b1a&is=6514e99a&hm=4dfb295680e00fbf4482297becc8afc8b988b00e1627597c698ed51f30679806&)
 
 ![](https://cdn.discordapp.com/attachments/1148297410318176256/1156784591059816558/image.png?ex=65163b1a&is=6514e99a&hm=4dfb295680e00fbf4482297becc8afc8b988b00e1627597c698ed51f30679806&)
 
