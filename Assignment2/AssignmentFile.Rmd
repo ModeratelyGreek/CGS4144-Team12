@@ -58,7 +58,11 @@ results_dir <- "results"
 if (!dir.exists(results_dir)) {
   dir.create(results_dir)
 }
+```
 
+[🚨Pause here and load the data.]{.underline}
+
+```{r}
 # Define the file path to the data directory
 # Replace with the path of the folder the files will be in
 data_dir <- file.path("data", "SRP075377")
