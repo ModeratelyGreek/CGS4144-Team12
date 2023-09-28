@@ -233,74 +233,74 @@ plot(density(justPlotThis$Range))
 -   Use the DESeq2 function plotPCA() to generate your plot (see here)
 -   Color your plot by the 2 groups you identified in assignment 1 (e.g., Diabetic vs Non-Diabetic)
 -   Make sure you include a legend and label the axes!
-    ```{r}
-    # First let's install the requisite libraries.
-    if (!("DESeq2" %in% installed.packages())) {
-      # Install this package if it isn't installed yet
-      BiocManager::install("DESeq2", update = FALSE)
-    }
-    
-    # Attach the DESeq2 library
-    library(DESeq2)
-    ```
-    
-    Alright, let's prep the metadata to better select what we need.
+```{r}
+# First let's install the requisite libraries.
+if (!("DESeq2" %in% installed.packages())) {
+  # Install this package if it isn't installed yet
+  BiocManager::install("DESeq2", update = FALSE)
+}
 
-    ```{r include=FALSE}
-    new_expression_df <- readr::read_tsv(data_file) %>%
-      tibble::column_to_rownames("Gene")
+# Attach the DESeq2 library
+library(DESeq2)
+```
+    
+Alright, let's prep the metadata to better select what we need.
 
-    metadata <- metadata %>%
-      dplyr::mutate(diabetes = dplyr::case_when(
-        stringr::str_detect(refinebio_subject, "non t2d") ~ "reference",
-        stringr::str_detect(refinebio_subject, "t2d") ~ "diabetic",
-      ))
+```{r include=FALSE}
+new_expression_df <- readr::read_tsv(data_file) %>%
+  tibble::column_to_rownames("Gene")
 
-    #Remove ambiguously-labeled samples from metadata
-    culledMeta <- metadata[!(metadata$refinebio_subject=="pancreatic islets"),]
+metadata <- metadata %>%
+  dplyr::mutate(diabetes = dplyr::case_when(
+    stringr::str_detect(refinebio_subject, "non t2d") ~ "reference",
+    stringr::str_detect(refinebio_subject, "t2d") ~ "diabetic",
+  ))
 
-    discardColumns <- metadata[(metadata$refinebio_subject=="pancreatic islets"),]
-    discardColumns = as.vector(discardColumns$refinebio_accession_code)
-    length(discardColumns)
-    #Preserve only columns in expression_df that match one of the accession ids
-    culled_expression_df = new_expression_df[,!(names(new_expression_df) %in% discardColumns)]
+#Remove ambiguously-labeled samples from metadata
+culledMeta <- metadata[!(metadata$refinebio_subject=="pancreatic islets"),]
 
-    # Make mutation_status a factor and set the levels appropriately
-    culledMeta <- culledMeta %>%
-      dplyr::mutate(
-        # Here we define the values our factor variable can have and their order.
-        diabetes = factor(diabetes, levels = c("reference", "diabetic"))
-      )
-    ```
-    
-    ```{r}
-    round_culled_expression_df <- round(culled_expression_df)
+discardColumns <- metadata[(metadata$refinebio_subject=="pancreatic islets"),]
+discardColumns = as.vector(discardColumns$refinebio_accession_code)
+length(discardColumns)
+#Preserve only columns in expression_df that match one of the accession ids
+culled_expression_df = new_expression_df[,!(names(new_expression_df) %in% discardColumns)]
 
+# Make mutation_status a factor and set the levels appropriately
+culledMeta <- culledMeta %>%
+  dplyr::mutate(
+    # Here we define the values our factor variable can have and their order.
+    diabetes = factor(diabetes, levels = c("reference", "diabetic"))
+  )
+```
     
-    ddset <- DESeqDataSetFromMatrix(
-      # Here we supply non-normalized count data
-      countData = round_culled_expression_df,
-      # Supply the `colData` with our metadata data frame
-      colData = culledMeta,
-      # Supply our diabetes variable to `design`
-      design = ~diabetes #Diabetes_status
-    )
-    
-    dds_norm <- vst(ddset)
-    
-    plotPCA(
-      dds_norm,
-      intgroup = "diabetes"
-    )
-    
-    pca_results <-
-      plotPCA(
-        dds_norm,
-        intgroup = c("diabetes"),
-        returnData = TRUE # This argument tells R to return the PCA values
-      )
-    
-    ```
+```{r}
+round_culled_expression_df <- round(culled_expression_df)
+
+
+ddset <- DESeqDataSetFromMatrix(
+  # Here we supply non-normalized count data
+  countData = round_culled_expression_df,
+  # Supply the `colData` with our metadata data frame
+  colData = culledMeta,
+  # Supply our diabetes variable to `design`
+  design = ~diabetes #Diabetes_status
+)
+
+dds_norm <- vst(ddset)
+
+plotPCA(
+  dds_norm,
+  intgroup = "diabetes"
+)
+
+pca_results <-
+  plotPCA(
+    dds_norm,
+    intgroup = c("diabetes"),
+    returnData = TRUE # This argument tells R to return the PCA values
+  )
+
+```
 - PCA Plot Summary
 
 -   If you have 3 or 4 students in your group, also generate either t-SNE or UMAP plot, and summarize the differences and similarities between your two plots.
