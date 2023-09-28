@@ -13,12 +13,6 @@ editor_options:
 
 # Instructions:
 
-[Beyond simply running the code below, please insert your data files in
-the data directory such that the single folder from refine.bio
-containing the metadata TSV and main TSV file are present in the
-immediate subdirectory. This can be downloaded from google drive,
-[here!](https://drive.google.com/file/d/1aOnupOgIn-b7rSoGdRflNBvpfQPcR5v5/view?usp=sharing "Download folder to be unzipped as subdirectory of Data!")]{.underline}
-
 [Below we've transcribed the assignment instructions with corresponding
 code blocks beneath each.]{.underline}
 
@@ -40,6 +34,9 @@ code blocks beneath each.]{.underline}
     traditional notebook manner. We do not reserve the annotations for
     step 7 and instead hope to meet the criteria by elaborating on all
     provided images and tables directly adjacent to each.]{.underline}
+
+-   [⭐️ Stars are used to denote items corresponding directly to the
+    rubric]{.underline}
 
 ```{r}
 # Mount requisite libraries
@@ -86,50 +83,49 @@ if (!dir.exists(results_dir)) {
 
 ### [🚨Pause here and load the data.]{.underline}
 
+[Please insert your data files in the data directory such that the
+single folder from refine.bio containing the metadata TSV and main TSV
+file are present in the immediate subdirectory. This can be downloaded
+from google drive,
+[here!](https://drive.google.com/file/d/1aOnupOgIn-b7rSoGdRflNBvpfQPcR5v5/view?usp=sharing "Download folder to be unzipped as subdirectory of Data!")]{.underline}
+
 ```{r}
 # Define the file path to the data directory
-# Replace with the path of the folder the files will be in
 data_dir <- file.path("data", "SRP075377")
 
-# Declare the file path to the gene expression matrix file
-# inside directory saved as `data_dir`
-# Replace with the path to your dataset file
+# Declare the file path to the gene expression matrix file inside directory saved as `data_dir`
 data_file <- file.path(data_dir, "SRP075377.tsv")
 
-# Declare the file path to the metadata file
-# inside the directory saved as `data_dir`
-# Replace with the path to your metadata file
+# Declare the file path to the metadata file inside the directory saved as `data_dir`
 metadata_file <- file.path(data_dir, "metadata_SRP075377.tsv")
 
-# Check if the gene expression matrix file is at the path stored in `data_file`
+# Check that files exist and are usable.
 file.exists(data_file)
-
-# Check if the metadata file is at the file path stored in `metadata_file`
 file.exists(metadata_file)
 ```
 
-This next step loads data and annotation libraries, a 30-second ordeal.
+[This next step loads data and annotation libraries per the
+instructions, but does not attempt to transform our Gene column to the
+Entrez IDs as this was unnecessary for downstream
+processing.]{.underline}
 
 ```{r include=FALSE}
 #Install and attach the Homo Sapiens annotation package.
 if (!("org.Hs.eg.db" %in% installed.packages())) {
   BiocManager::install("org.Hs.eg.db", update = FALSE)
 }
-
 library(org.Hs.eg.db)
 
-# We will need this so we can use the pipe: %>%
+# Attach library for pipe (%>%)
 library(magrittr)
 
-# Read in data and metadata  TSV file
+# Read in data and metadata TSV file and make Gene column into row names
 metadata <- readr::read_tsv(metadata_file)
 expression_df <- readr::read_tsv(data_file) %>%
-  # Tuck away the Gene ID column as row names
   tibble::column_to_rownames("Gene")
 ```
 
 ```{r}
-#Seemingly like a left-join
 # Make the data in the order of the metadata
 expression_df <- expression_df %>%
   dplyr::select(metadata$refinebio_accession_code)
@@ -164,7 +160,7 @@ mapped_df <- mapped_list %>%
 
 What size is your expression matrix?
 
-```{r }
+```{r}
 dim(expression_df)
 ```
 
