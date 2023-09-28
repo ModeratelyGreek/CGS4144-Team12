@@ -196,6 +196,7 @@ justPlotThis <- justPlotThis %>%
 
 plot(density(justPlotThis$Median))
 ```
+
 ```{r}
 # First let's install the requisite libraries.
     if (!("affy" %in% installed.packages())) {
@@ -216,7 +217,6 @@ plotDensity(log(expression_df+1), col=rep(myColors, each=3),
             main='Expression Density Distribution')
 ```
 
-
 #### Summarize your findings.
 
 [The majority of the genes show negative median log-scaled expression, implying a lack of correlation. However, a group can be seen with values near 1-2 on the median log scale. These imply that the genes in this group are those which, relative to other genes gathered from the pancreatic islet cells samples, are being expressed the most. This stands against no particular control, however, and so does not yield any meaningful conclusions of the genes at hand being diabetic, but rather just genes that are expressed more.]{.underline}
@@ -233,6 +233,7 @@ plot(density(justPlotThis$Range))
 -   Use the DESeq2 function plotPCA() to generate your plot (see here)
 -   Color your plot by the 2 groups you identified in assignment 1 (e.g., Diabetic vs Non-Diabetic)
 -   Make sure you include a legend and label the axes!
+
 ```{r}
 # First let's install the requisite libraries.
 if (!("DESeq2" %in% installed.packages())) {
@@ -243,7 +244,7 @@ if (!("DESeq2" %in% installed.packages())) {
 # Attach the DESeq2 library
 library(DESeq2)
 ```
-    
+
 Alright, let's prep the metadata to better select what we need.
 
 ```{r include=FALSE}
@@ -272,7 +273,7 @@ culledMeta <- culledMeta %>%
     diabetes = factor(diabetes, levels = c("reference", "diabetic"))
   )
 ```
-    
+
 ```{r}
 round_culled_expression_df <- round(culled_expression_df)
 
@@ -301,10 +302,13 @@ pca_results <-
   )
 
 ```
-- PCA Plot Summary
+
+-   PCA Plot Summary
 
 -   If you have 3 or 4 students in your group, also generate either t-SNE or UMAP plot, and summarize the differences and similarities between your two plots.
+
 -   UMAP (example here)
+
 ```{r}
 library("umap")
 
@@ -359,8 +363,6 @@ ggplot(
     # We will need this so we can use the pipe: %>%
     library(magrittr)
     ```
-
-    
 
     Volcano plot time.
 
@@ -454,12 +456,8 @@ ComplexHeatmap::draw(ht)
 ```
 
 #### HEATMAP SUMMARY:
-Due to a number of limitations and obstacles we encountered over the course of doing task #4, we have not included a heatmap using ComplexHeatmap, although we did generate several test Heatmaps. In terms of data, we faced a performance bottleneck due to the extremely large amount of genes present in our dataset, and so our devices took extremely long periods of time to calculate even basic heat maps. In addition, the premise of seprating genes in the sidebar based on their relationship to diabetic/nondiabetic samples was somewhat confusing because such a binary value is contradictory with the purpose of a heatmap. Several youtube resources guided us towards instead attemmpting to reduce our sample size, but this proved very challenging. Had we more time, we'd attempted the following:
-- Transpose original data
-- Left join meta data on Accession Code
-- Group by refineBio_subject, averaging accross genes within subject groups to achieve mean expressions
-- Omit all further columns
-- transpose data back, and plot with X axis of 20 subjects, y axis of 355 most significant genes, and a heatmap of log2fold diff expression.
+
+Due to a number of limitations and obstacles we encountered over the course of doing task #4, we have not included a heatmap using ComplexHeatmap, although we did generate several test Heatmaps. In terms of data, we faced a performance bottleneck due to the extremely large amount of genes present in our dataset, and so our devices took extremely long periods of time to calculate even basic heat maps. In addition, the premise of seprating genes in the sidebar based on their relationship to diabetic/nondiabetic samples was somewhat confusing because such a binary value is contradictory with the purpose of a heatmap. Several youtube resources guided us towards instead attemmpting to reduce our sample size, but this proved very challenging. Had we more time, we'd attempted the following: - Transpose original data - Left join meta data on Accession Code - Group by refineBio_subject, averaging accross genes within subject groups to achieve mean expressions - Omit all further columns - transpose data back, and plot with X axis of 20 subjects, y axis of 355 most significant genes, and a heatmap of log2fold diff expression.
 
 We provide the original code for our initial, very crude Heatmap, to demonstrate our usage of ComplexHeatmap in this task. We hope that the profoundly large dataset we use and the additional challenges faced in attempting such aggregation will be considered in our failure to produce a meaningful output.
 
@@ -489,13 +487,13 @@ Each student in your team should run a different method OR ontology (e.g., if th
 
     -   gProfiler2
 
-[We have opted to use gprofiler2 to avoid the challenges associated with writing R and manipulating our already conclusive data. All three of us are exploring three different ontologies: Biological pathways (GO:BP), Molecular Function (GO:MF), and Cellular Components (GO:CC). The above code isolates only statistically significant genes which we can then paste into gprofiler/gost. Seeing as part 5 contains no further instructions, see part 6 for corresponding write up.]{.underline}
+[We have opted to use gprofiler2 to avoid the challenges associated with writing R and manipulating our already conclusive data. All three of us are exploring three different ontologies: Biological pathways (<GO:BP>), Molecular Function (<GO:MF>), and Cellular Components (<GO:CC>). The above code isolates only statistically significant genes which we can then paste into gprofiler/gost. Seeing as part 5 contains no further instructions, see part 6 for corresponding write up.]{.underline}
 
 ### 6. Create a table of the enriched processes found for each method in step 4 (one table per method). Create a table showing statistically significantly enriched terms and any characteristics shared by the method you used (e.g., q-value, p-value, log fold change)
 
 ![im3](https://cdn.discordapp.com/attachments/1148297410318176256/1156772921298124830/gProfiler_hsapiens_2023-09-28_01-39-56.png)
 
-[The above table was produced using gost, an online tool that attempts to display genes clustered by various ontologies, ontologies being such significance as the molecule to which they contribute, regulatory effects they perform, or relationship with a disease among other categories. Of signficance is cytoplasmic relationship within particularly the GO:CC table. We can see a very significant P value here of 1.324x10^-14, which is seemingly reasonable since diabetes would influence certain metabolic pathways naturally present in the cytoplasm, or so we would assume from the results. Biological quality regulation was also closely tied to the differential expression of our genes, as well as protein binding, this last one falling under molecular function. This is intriguing as it may relate to insulin receptors' capacity to bind free glucose, though it is our understanding that this is a fundamental quality not only of pancreatic islet cells but of all somatic cells participating in metabolism.]{.underline}
+[The above table was produced using gost, an online tool that attempts to display genes clustered by various ontologies, ontologies being such significance as the molecule to which they contribute, regulatory effects they perform, or relationship with a disease among other categories. Of signficance is cytoplasmic relationship within particularly the <GO:CC> table. We can see a very significant P value here of 1.324x10\^-14, which is seemingly reasonable since diabetes would influence certain metabolic pathways naturally present in the cytoplasm, or so we would assume from the results. Biological quality regulation was also closely tied to the differential expression of our genes, as well as protein binding, this last one falling under molecular function. This is intriguing as it may relate to insulin receptors' capacity to bind free glucose, though it is our understanding that this is a fundamental quality not only of pancreatic islet cells but of all somatic cells participating in metabolism.]{.underline}
 
 ### 7. Write a short summary to go with each plot/table you create. Describe what you did, what parameters you used (if any) and an interesting result from it.
 
