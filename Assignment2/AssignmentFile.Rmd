@@ -210,10 +210,9 @@ plot(density(justPlotThis$Range))
 ### 2. Now that you have loaded the expression data into R, generate a PCA plot:
 
 -   If you have counts file(s), follow these DESeq2 directions to generate an expression matrix.
+
 -   Use the DESeq2 function plotPCA() to generate your plot (see here)
--   Color your plot by the 2 groups you identified in assignment 1 (e.g., Diabetic vs Non-Diabetic)
--   Make sure you include a legend and label the axes!
-    ```{r}
+```{r}
     # First let's install the requisite libraries.
     if (!("DESeq2" %in% installed.packages())) {
       # Install this package if it isn't installed yet
@@ -222,73 +221,48 @@ plot(density(justPlotThis$Range))
     
     # Attach the DESeq2 library
     library(DESeq2)
-    ```
-    
-    Alright, let's prep the metadata to better select what we need.
+```
+-   Color your plot by the 2 groups you identified in assignment 1 (e.g., Diabetic vs Non-Diabetic)
 
-    ```{r include=FALSE}
-    new_expression_df <- readr::read_tsv(data_file) %>%
-      tibble::column_to_rownames("Gene")
+-   Make sure you include a legend and label the axes!
 
-    metadata <- metadata %>%
-      dplyr::mutate(diabetes = dplyr::case_when(
-        stringr::str_detect(refinebio_subject, "non t2d") ~ "reference",
-        stringr::str_detect(refinebio_subject, "t2d") ~ "diabetic",
-      ))
+    Alright, let's prep the metadata to better select what we need. 31b8e172-b470-440e-83d8-e6b185028602:dAB5AHAAZQA6AE8AUQBCAGoAQQBHAEkAQQBOAHcAQQA1AEEARwBVAEEATgBnAEIAagBBAEMAMABBAE8AQQBBADQAQQBEAGcAQQBaAEEAQQB0AEEARABRAEEAWQBRAEEAdwBBAEcAVQBBAEwAUQBBADUAQQBHAE0AQQBPAFEAQgBpAEEAQwAwAEEAWgBnAEIAbQBBAEQAWQBBAE4AdwBCAGoAQQBHAFEAQQBOAEEAQQB3AEEARABRAEEAWgBRAEEAMgBBAEQAQQBBAAoAcABvAHMAaQB0AGkAbwBuADoATwBBAEEAegBBAEQARQBBAE0AUQBBAD0ACgBwAHIAZQBmAGkAeAA6AAoAcwBvAHUAcgBjAGUAOgBZAEEAQgBnAEEARwBBAEEAZQB3AEIANwBBAEgASQBBAEkAQQBCAHAAQQBHADQAQQBZAHcAQgBzAEEASABVAEEAWgBBAEIAbABBAEQAMABBAFIAZwBCAEIAQQBFAHcAQQBVAHcAQgBGAEEASAAwAEEAZgBRAEEASwBBAEcANABBAFoAUQBCADMAQQBGADgAQQBaAFEAQgA0AEEASABBAEEAYwBnAEIAbABBAEgATQBBAGMAdwBCAHAAQQBHADgAQQBiAGcAQgBmAEEARwBRAEEAWgBnAEEAZwBBAEQAdwBBAEwAUQBBAGcAQQBIAEkAQQBaAFEAQgBoAEEARwBRAEEAYwBnAEEANgBBAEQAbwBBAGMAZwBCAGwAQQBHAEUAQQBaAEEAQgBmAEEASABRAEEAYwB3AEIAMgBBAEMAZwBBAFoAQQBCAGgAQQBIAFEAQQBZAFEAQgBmAEEARwBZAEEAYQBRAEIAcwBBAEcAVQBBAEsAUQBBAGcAQQBDAFUAQQBQAGcAQQBsAEEAQQBvAEEASQBBAEEAZwBBAEgAUQBBAGEAUQBCAGkAQQBHAEkAQQBiAEEAQgBsAEEARABvAEEATwBnAEIAagBBAEcAOABBAGIAQQBCADEAQQBHADAAQQBiAGcAQgBmAEEASABRAEEAYgB3AEIAZgBBAEgASQBBAGIAdwBCADMAQQBHADQAQQBZAFEAQgB0AEEARwBVAEEAYwB3AEEAbwBBAEMASQBBAFIAdwBCAGwAQQBHADQAQQBaAFEAQQBpAEEAQwBrAEEAQwBnAEEASwBBAEcAMABBAFoAUQBCADAAQQBHAEUAQQBaAEEAQgBoAEEASABRAEEAWQBRAEEAZwBBAEQAdwBBAEwAUQBBAGcAQQBHADAAQQBaAFEAQgAwAEEARwBFAEEAWgBBAEIAaABBAEgAUQBBAFkAUQBBAGcAQQBDAFUAQQBQAGcAQQBsAEEAQQBvAEEASQBBAEEAZwBBAEcAUQBBAGMAQQBCAHMAQQBIAGsAQQBjAGcAQQA2AEEARABvAEEAYgBRAEIAMQBBAEgAUQBBAFkAUQBCADAAQQBHAFUAQQBLAEEAQgBrAEEARwBrAEEAWQBRAEIAaQBBAEcAVQBBAGQAQQBCAGwAQQBIAE0AQQBJAEEAQQA5AEEAQwBBAEEAWgBBAEIAdwBBAEcAdwBBAGUAUQBCAHkAQQBEAG8AQQBPAGcAQgBqAEEARwBFAEEAYwB3AEIAbABBAEYAOABBAGQAdwBCAG8AQQBHAFUAQQBiAGcAQQBvAEEAQQBvAEEASQBBAEEAZwBBAEMAQQBBAEkAQQBCAHoAQQBIAFEAQQBjAGcAQgBwAEEARwA0AEEAWgB3AEIAeQBBAEQAbwBBAE8AZwBCAHoAQQBIAFEAQQBjAGcAQgBmAEEARwBRAEEAWgBRAEIAMABBAEcAVQBBAFkAdwBCADAAQQBDAGcAQQBjAGcAQgBsAEEARwBZAEEAYQBRAEIAdQBBAEcAVQBBAFkAZwBCAHAAQQBHADgAQQBYAHcAQgB6AEEASABVAEEAWQBnAEIAcQBBAEcAVQBBAFkAdwBCADAAQQBDAHcAQQBJAEEAQQBpAEEARwA0AEEAYgB3AEIAdQBBAEMAQQBBAGQAQQBBAHkAQQBHAFEAQQBJAGcAQQBwAEEAQwBBAEEAZgBnAEEAZwBBAEMASQBBAGMAZwBCAGwAQQBHAFkAQQBaAFEAQgB5AEEARwBVAEEAYgBnAEIAagBBAEcAVQBBAEkAZwBBAHMAQQBBAG8AQQBJAEEAQQBnAEEAQwBBAEEASQBBAEIAegBBAEgAUQBBAGMAZwBCAHAAQQBHADQAQQBaAHcAQgB5AEEARABvAEEATwBnAEIAegBBAEgAUQBBAGMAZwBCAGYAQQBHAFEAQQBaAFEAQgAwAEEARwBVAEEAWQB3AEIAMABBAEMAZwBBAGMAZwBCAGwAQQBHAFkAQQBhAFEAQgB1AEEARwBVAEEAWQBnAEIAcABBAEcAOABBAFgAdwBCAHoAQQBIAFUAQQBZAGcAQgBxAEEARwBVAEEAWQB3AEIAMABBAEMAdwBBAEkAQQBBAGkAQQBIAFEAQQBNAGcAQgBrAEEAQwBJAEEASwBRAEEAZwBBAEgANABBAEkAQQBBAGkAQQBHAFEAQQBhAFEAQgBoAEEARwBJAEEAWgBRAEIAMABBAEcAawBBAFkAdwBBAGkAQQBDAHcAQQBDAGcAQQBnAEEAQwBBAEEASwBRAEEAcABBAEEAbwBBAEMAZwBBAGoAQQBGAEkAQQBaAFEAQgB0AEEARwA4AEEAZABnAEIAbABBAEMAQQBBAFkAUQBCAHQAQQBHAEkAQQBhAFEAQgBuAEEASABVAEEAYgB3AEIAMQBBAEgATQBBAGIAQQBCADUAQQBDADAAQQBiAEEAQgBoAEEARwBJAEEAWgBRAEIAcwBBAEcAVQBBAFoAQQBBAGcAQQBIAE0AQQBZAFEAQgB0AEEASABBAEEAYgBBAEIAbABBAEgATQBBAEkAQQBCAG0AQQBIAEkAQQBiAHcAQgB0AEEAQwBBAEEAYgBRAEIAbABBAEgAUQBBAFkAUQBCAGsAQQBHAEUAQQBkAEEAQgBoAEEAQQBvAEEAWQB3AEIAMQBBAEcAdwBBAGIAQQBCAGwAQQBHAFEAQQBUAFEAQgBsAEEASABRAEEAWQBRAEEAZwBBAEQAdwBBAEwAUQBBAGcAQQBHADAAQQBaAFEAQgAwAEEARwBFAEEAWgBBAEIAaABBAEgAUQBBAFkAUQBCAGIAQQBDAEUAQQBLAEEAQgB0AEEARwBVAEEAZABBAEIAaABBAEcAUQBBAFkAUQBCADAAQQBHAEUAQQBKAEEAQgB5AEEARwBVAEEAWgBnAEIAcABBAEcANABBAFoAUQBCAGkAQQBHAGsAQQBiAHcAQgBmAEEASABNAEEAZABRAEIAaQBBAEcAbwBBAFoAUQBCAGoAQQBIAFEAQQBQAFEAQQA5AEEAQwBJAEEAYwBBAEIAaABBAEcANABBAFkAdwBCAHkAQQBHAFUAQQBZAFEAQgAwAEEARwBrAEEAWQB3AEEAZwBBAEcAawBBAGMAdwBCAHMAQQBHAFUAQQBkAEEAQgB6AEEAQwBJAEEASwBRAEEAcwBBAEYAMABBAEMAZwBBAEsAQQBHAFEAQQBhAFEAQgB6AEEARwBNAEEAWQBRAEIAeQBBAEcAUQBBAFEAdwBCAHYAQQBHAHcAQQBkAFEAQgB0AEEARwA0AEEAYwB3AEEAZwBBAEQAdwBBAEwAUQBBAGcAQQBHADAAQQBaAFEAQgAwAEEARwBFAEEAWgBBAEIAaABBAEgAUQBBAFkAUQBCAGIAQQBDAGcAQQBiAFEAQgBsAEEASABRAEEAWQBRAEIAawBBAEcARQBBAGQAQQBCAGgAQQBDAFEAQQBjAGcAQgBsAEEARwBZAEEAYQBRAEIAdQBBAEcAVQBBAFkAZwBCAHAAQQBHADgAQQBYAHcAQgB6AEEASABVAEEAWQBnAEIAcQBBAEcAVQBBAFkAdwBCADAAQQBEADAAQQBQAFEAQQBpAEEASABBAEEAWQBRAEIAdQBBAEcATQBBAGMAZwBCAGwAQQBHAEUAQQBkAEEAQgBwAEEARwBNAEEASQBBAEIAcABBAEgATQBBAGIAQQBCAGwAQQBIAFEAQQBjAHcAQQBpAEEAQwBrAEEATABBAEIAZABBAEEAbwBBAFoAQQBCAHAAQQBIAE0AQQBZAHcAQgBoAEEASABJAEEAWgBBAEIARABBAEcAOABBAGIAQQBCADEAQQBHADAAQQBiAGcAQgB6AEEAQwBBAEEAUABRAEEAZwBBAEcARQBBAGMAdwBBAHUAQQBIAFkAQQBaAFEAQgBqAEEASABRAEEAYgB3AEIAeQBBAEMAZwBBAFoAQQBCAHAAQQBIAE0AQQBZAHcAQgBoAEEASABJAEEAWgBBAEIARABBAEcAOABBAGIAQQBCADEAQQBHADAAQQBiAGcAQgB6AEEAQwBRAEEAYwBnAEIAbABBAEcAWQBBAGEAUQBCAHUAQQBHAFUAQQBZAGcAQgBwAEEARwA4AEEAWAB3AEIAaABBAEcATQBBAFkAdwBCAGwAQQBIAE0AQQBjAHcAQgBwAEEARwA4AEEAYgBnAEIAZgBBAEcATQBBAGIAdwBCAGsAQQBHAFUAQQBLAFEAQQBLAEEARwB3AEEAWgBRAEIAdQBBAEcAYwBBAGQAQQBCAG8AQQBDAGcAQQBaAEEAQgBwAEEASABNAEEAWQB3AEIAaABBAEgASQBBAFoAQQBCAEQAQQBHADgAQQBiAEEAQgAxAEEARwAwAEEAYgBnAEIAegBBAEMAawBBAEMAZwBBAGoAQQBGAEEAQQBjAGcAQgBsAEEASABNAEEAWgBRAEIAeQBBAEgAWQBBAFoAUQBBAGcAQQBHADgAQQBiAGcAQgBzAEEASABrAEEASQBBAEIAagBBAEcAOABBAGIAQQBCADEAQQBHADAAQQBiAGcAQgB6AEEAQwBBAEEAYQBRAEIAdQBBAEMAQQBBAFoAUQBCADQAQQBIAEEAQQBjAGcAQgBsAEEASABNAEEAYwB3AEIAcABBAEcAOABBAGIAZwBCAGYAQQBHAFEAQQBaAGcAQQBnAEEASABRAEEAYQBBAEIAaABBAEgAUQBBAEkAQQBCAHQAQQBHAEUAQQBkAEEAQgBqAEEARwBnAEEASQBBAEIAdgBBAEcANABBAFoAUQBBAGcAQQBHADgAQQBaAGcAQQBnAEEASABRAEEAYQBBAEIAbABBAEMAQQBBAFkAUQBCAGoAQQBHAE0AQQBaAFEAQgB6AEEASABNAEEAYQBRAEIAdgBBAEcANABBAEkAQQBCAHAAQQBHAFEAQQBjAHcAQQBLAEEARwBNAEEAZABRAEIAcwBBAEcAdwBBAFoAUQBCAGsAQQBGADgAQQBaAFEAQgA0AEEASABBAEEAYwBnAEIAbABBAEgATQBBAGMAdwBCAHAAQQBHADgAQQBiAGcAQgBmAEEARwBRAEEAWgBnAEEAZwBBAEQAMABBAEkAQQBCAHUAQQBHAFUAQQBkAHcAQgBmAEEARwBVAEEAZQBBAEIAdwBBAEgASQBBAFoAUQBCAHoAQQBIAE0AQQBhAFEAQgB2AEEARwA0AEEAWAB3AEIAawBBAEcAWQBBAFcAdwBBAHMAQQBDAEUAQQBLAEEAQgB1AEEARwBFAEEAYgBRAEIAbABBAEgATQBBAEsAQQBCAHUAQQBHAFUAQQBkAHcAQgBmAEEARwBVAEEAZQBBAEIAdwBBAEgASQBBAFoAUQBCAHoAQQBIAE0AQQBhAFEAQgB2AEEARwA0AEEAWAB3AEIAawBBAEcAWQBBAEsAUQBBAGcAQQBDAFUAQQBhAFEAQgB1AEEAQwBVAEEASQBBAEIAawBBAEcAawBBAGMAdwBCAGoAQQBHAEUAQQBjAGcAQgBrAEEARQBNAEEAYgB3AEIAcwBBAEgAVQBBAGIAUQBCAHUAQQBIAE0AQQBLAFEAQgBkAEEAQQBvAEEAQwBnAEEAagBBAEMAQQBBAFQAUQBCAGgAQQBHAHMAQQBaAFEAQQBnAEEARwAwAEEAZABRAEIAMABBAEcARQBBAGQAQQBCAHAAQQBHADgAQQBiAGcAQgBmAEEASABNAEEAZABBAEIAaABBAEgAUQBBAGQAUQBCAHoAQQBDAEEAQQBZAFEAQQBnAEEARwBZAEEAWQBRAEIAagBBAEgAUQBBAGIAdwBCAHkAQQBDAEEAQQBZAFEAQgB1AEEARwBRAEEASQBBAEIAegBBAEcAVQBBAGQAQQBBAGcAQQBIAFEAQQBhAEEAQgBsAEEAQwBBAEEAYgBBAEIAbABBAEgAWQBBAFoAUQBCAHMAQQBIAE0AQQBJAEEAQgBoAEEASABBAEEAYwBBAEIAeQBBAEcAOABBAGMAQQBCAHkAQQBHAGsAQQBZAFEAQgAwAEEARwBVAEEAYgBBAEIANQBBAEEAbwBBAFkAdwBCADEAQQBHAHcAQQBiAEEAQgBsAEEARwBRAEEAVABRAEIAbABBAEgAUQBBAFkAUQBBAGcAQQBEAHcAQQBMAFEAQQBnAEEARwBNAEEAZABRAEIAcwBBAEcAdwBBAFoAUQBCAGsAQQBFADAAQQBaAFEAQgAwAEEARwBFAEEASQBBAEEAbABBAEQANABBAEoAUQBBAEsAQQBDAEEAQQBJAEEAQgBrAEEASABBAEEAYgBBAEIANQBBAEgASQBBAE8AZwBBADYAQQBHADAAQQBkAFEAQgAwAEEARwBFAEEAZABBAEIAbABBAEMAZwBBAEMAZwBBAGcAQQBDAEEAQQBJAEEAQQBnAEEAQwBNAEEASQBBAEIASQBBAEcAVQBBAGMAZwBCAGwAQQBDAEEAQQBkAHcAQgBsAEEAQwBBAEEAWgBBAEIAbABBAEcAWQBBAGEAUQBCAHUAQQBHAFUAQQBJAEEAQgAwAEEARwBnAEEAWgBRAEEAZwBBAEgAWQBBAFkAUQBCAHMAQQBIAFUAQQBaAFEAQgB6AEEAQwBBAEEAYgB3AEIAMQBBAEgASQBBAEkAQQBCAG0AQQBHAEUAQQBZAHcAQgAwAEEARwA4AEEAYwBnAEEAZwBBAEgAWQBBAFkAUQBCAHkAQQBHAGsAQQBZAFEAQgBpAEEARwB3AEEAWgBRAEEAZwBBAEcATQBBAFkAUQBCAHUAQQBDAEEAQQBhAEEAQgBoAEEASABZAEEAWgBRAEEAZwBBAEcARQBBAGIAZwBCAGsAQQBDAEEAQQBkAEEAQgBvAEEARwBVAEEAYQBRAEIAeQBBAEMAQQBBAGIAdwBCAHkAQQBHAFEAQQBaAFEAQgB5AEEAQwA0AEEAQwBnAEEAZwBBAEMAQQBBAEkAQQBBAGcAQQBHAFEAQQBhAFEAQgBoAEEARwBJAEEAWgBRAEIAMABBAEcAVQBBAGMAdwBBAGcAQQBEADAAQQBJAEEAQgBtAEEARwBFAEEAWQB3AEIAMABBAEcAOABBAGMAZwBBAG8AQQBHAFEAQQBhAFEAQgBoAEEARwBJAEEAWgBRAEIAMABBAEcAVQBBAGMAdwBBAHMAQQBDAEEAQQBiAEEAQgBsAEEASABZAEEAWgBRAEIAcwBBAEgATQBBAEkAQQBBADkAQQBDAEEAQQBZAHcAQQBvAEEAQwBJAEEAYwBnAEIAbABBAEcAWQBBAFoAUQBCAHkAQQBHAFUAQQBiAGcAQgBqAEEARwBVAEEASQBnAEEAcwBBAEMAQQBBAEkAZwBCAGsAQQBHAGsAQQBZAFEAQgBpAEEARwBVAEEAZABBAEIAcABBAEcATQBBAEkAZwBBAHAAQQBDAGsAQQBDAGcAQQBnAEEAQwBBAEEASwBRAEEASwBBAEcAQQBBAFkAQQBCAGcAQQBBAD0APQAKAHMAdQBmAGYAaQB4ADoA:31b8e172-b470-440e-83d8-e6b185028602
 
-    #Remove ambiguously-labeled samples from metadata
-    culledMeta <- metadata[!(metadata$refinebio_subject=="pancreatic islets"),]
+```{{r}}
+round_culled_expression_df <- round(culled_expression_df)
 
-    discardColumns <- metadata[(metadata$refinebio_subject=="pancreatic islets"),]
-    discardColumns = as.vector(discardColumns$refinebio_accession_code)
-    length(discardColumns)
-    #Preserve only columns in expression_df that match one of the accession ids
-    culled_expression_df = new_expression_df[,!(names(new_expression_df) %in% discardColumns)]
 
-    # Make mutation_status a factor and set the levels appropriately
-    culledMeta <- culledMeta %>%
-      dplyr::mutate(
-        # Here we define the values our factor variable can have and their order.
-        diabetes = factor(diabetes, levels = c("reference", "diabetic"))
-      )
-    ```
-    
-    ```{r}
-    round_culled_expression_df <- round(culled_expression_df)
+ddset <- DESeqDataSetFromMatrix(
+  # Here we supply non-normalized count data
+  countData = round_culled_expression_df,
+  # Supply the `colData` with our metadata data frame
+  colData = culledMeta,
+  # Supply our diabetes variable to `design`
+  design = ~diabetes #Diabetes_status
+)
 
-    
-    ddset <- DESeqDataSetFromMatrix(
-      # Here we supply non-normalized count data
-      countData = round_culled_expression_df,
-      # Supply the `colData` with our metadata data frame
-      colData = culledMeta,
-      # Supply our diabetes variable to `design`
-      design = ~diabetes #Diabetes_status
-    )
-    
-    dds_norm <- vst(ddset)
-    
-    plotPCA(
-      dds_norm,
-      intgroup = "diabetes"
-    )
-    
-    pca_results <-
-      plotPCA(
-        dds_norm,
-        intgroup = c("diabetes"),
-        returnData = TRUE # This argument tells R to return the PCA values
-      )
-    
-    ```
-- PCA Plot Summary
-The PCA plot shows that the two groups diabetic and non-diabetic separate into two different clusters.
-The non-diabetic clusters tends to have less variance and is one uniform cluster while the diabetic 
-samples are separated into two different uniform clusters that have more variance. 
+dds_norm <- vst(ddset)
 
+plotPCA(
+  dds_norm,
+  intgroup = "diabetes"
+)
+
+pca_results <-
+  plotPCA(
+    dds_norm,
+    intgroup = c("diabetes"),
+    returnData = TRUE # This argument tells R to return the PCA values
+  )
+
+```
+
+-   PCA Plot Summary The PCA plot shows that the two groups diabetic and non-diabetic separate into two different clusters. The non-diabetic clusters tends to have less variance and is one uniform cluster while the diabetic samples are separated into two different uniform clusters that have more variance.
 
 -   If you have 3 or 4 students in your group, also generate either t-SNE or UMAP plot, and summarize the differences and similarities between your two plots.
+
 -   UMAP (example here)
+
 ```{r}
 library("umap")
 
@@ -321,11 +295,9 @@ ggplot(
 
 -   Save your plot(s) and summarize your findings.
 
-- UMAP Plot Summary
-The UMAP plot shows that the two groups are clustered together in distinct groups. These clusters are the two different cell types, diabetic and reference. There are a few outliers in the plot where a few samples are displayed at the bottom of the plot. 
+-   UMAP Plot Summary The UMAP plot shows that the two groups are clustered together in distinct groups. These clusters are the two different cell types, diabetic and reference. There are a few outliers in the plot where a few samples are displayed at the bottom of the plot.
 
-PCA Plot vs UMAP Plot Comparison
-- PCA is a linear technique that captures global structure and is computationally efficient, while UMAP is a nonlinear technique that excels at preserving local structure, making it well-suited for exploring complex relationships and identifying clusters in high-dimensional data. 
+PCA Plot vs UMAP Plot Comparison - PCA is a linear technique that captures global structure and is computationally efficient, while UMAP is a nonlinear technique that excels at preserving local structure, making it well-suited for exploring complex relationships and identifying clusters in high-dimensional data.
 
 ### 3. Perform differential analysis on the samples from your two groups, following the directions below
 
@@ -349,8 +321,6 @@ PCA Plot vs UMAP Plot Comparison
     # We will need this so we can use the pipe: %>%
     library(magrittr)
     ```
-
-    
 
     Volcano plot time.
 
@@ -462,7 +432,7 @@ Each student in your team should run a different method OR ontology (e.g., if th
 
     -   gProfiler2
 
-[We have opted to use gprofiler2 to avoid the challenges associated with writing R and manipulating our already conclusive data. All three of us are exploring three different ontologies: Biological pathways (GO:BP), Molecular Function (GO:MF), and Cellular Components (GO:CC). The above code isolates only statistically significant genes which we can then paste into gprofiler/gost. Seeing as part 5 contains no further instructions, see part 6 for corresponding write up.]{.underline}
+[We have opted to use gprofiler2 to avoid the challenges associated with writing R and manipulating our already conclusive data. All three of us are exploring three different ontologies: Biological pathways (<GO:BP>), Molecular Function (<GO:MF>), and Cellular Components (<GO:CC>). The above code isolates only statistically significant genes which we can then paste into gprofiler/gost. Seeing as part 5 contains no further instructions, see part 6 for corresponding write up.]{.underline}
 
 ### 6. Create a table of the enriched processes found for each method in step 4 (one table per method). Create a table showing statistically significantly enriched terms and any characteristics shared by the method you used (e.g., q-value, p-value, log fold change)
 
