@@ -359,8 +359,6 @@ pca_results <-
     returnData = TRUE # This argument tells R to return the PCA values
   )
 
-```
-
 ddset <- DESeqDataSetFromMatrix(
   # Here we supply non-normalized count data
   countData = round_culled_expression_df,
@@ -387,12 +385,18 @@ pca_results <-
 ```
 
 -   PCA Plot Summary
--   PCA Plot Summary The PCA plot shows that the two groups diabetic and non-diabetic separate into two different clusters. The non-diabetic clusters tends to have less variance and is one uniform cluster while the diabetic samples are separated into two different uniform clusters that have more variance.
+
+-   PCA Plot Summary The PCA plot shows that the two groups diabetic and
+    non-diabetic separate into two different clusters. The non-diabetic
+    clusters tends to have less variance and is one uniform cluster
+    while the diabetic samples are separated into two different uniform
+    clusters that have more variance.
+
 -   If you have 3 or 4 students in your group, also generate either
     t-SNE or UMAP plot, and summarize the differences and similarities
     between your two plots.
 
--   UMAP (example here)
+-   UMAP:
 
 ```{r}
 library("umap")
@@ -439,9 +443,17 @@ rm(umap_results)
 rm(ddset)
 ```
 
--   UMAP Plot Summary The UMAP plot shows that the two groups are clustered together in distinct groups. These clusters are the two different cell types, diabetic and reference. There are a few outliers in the plot where a few samples are displayed at the bottom of the plot.
+-   UMAP Plot Summary The UMAP plot shows that the two groups are
+    clustered together in distinct groups. These clusters are the two
+    different cell types, diabetic and reference. There are a few
+    outliers in the plot where a few samples are displayed at the bottom
+    of the plot.
 
-PCA Plot vs UMAP Plot Comparison - PCA is a linear technique that captures global structure and is computationally efficient, while UMAP is a nonlinear technique that excels at preserving local structure, making it well-suited for exploring complex relationships and identifying clusters in high-dimensional data.
+PCA Plot vs UMAP Plot Comparison - PCA is a linear technique that
+captures global structure and is computationally efficient, while UMAP
+is a nonlinear technique that excels at preserving local structure,
+making it well-suited for exploring complex relationships and
+identifying clusters in high-dimensional data.
 
 ### 3. Perform differential analysis on the samples from your two groups, following the directions below
 
