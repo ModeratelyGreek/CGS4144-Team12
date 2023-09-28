@@ -26,7 +26,6 @@ output:
 # Install requisite libraries
 library(dplyr)
 library(tidyverse)
-#library(GEOquery) # ??? doesnt seem to exist
 library(readr)
 ```
 
@@ -212,44 +211,19 @@ plot(density(justPlotThis$Range))
 
 -   If you have counts file(s), follow these DESeq2 directions to generate an expression matrix.
 -   Use the DESeq2 function plotPCA() to generate your plot (see here)
--   Color your plot by the 2 groups you identified in assignment 1 (e.g., cancer vs normal)
+-   Color your plot by the 2 groups you identified in assignment 1 (e.g., Diabetic vs Non-Diabetic)
 -   Make sure you include a legend and label the axes!
--   If you have 3 or 4 students in your group, also generate either t-SNE or UMAP plot, and summarize the differences and similarities between your two plots.
--   t-SNE (example here)
--   UMAP (example here)
--   Save your plot(s) and summarize your findings.
-
-### 3. Perform differential analysis on the samples from your two groups, following the directions below
-
--   alexslemonade.github.io/refinebio-examples/03-rnaseq/differential-expression_rnaseq_01.html
-
--   Create a volcano plot of your data, following the directions above
-
-    ```{r include=FALSE}
+    ```{r}
     # First let's install the requisite libraries.
     if (!("DESeq2" %in% installed.packages())) {
       # Install this package if it isn't installed yet
       BiocManager::install("DESeq2", update = FALSE)
     }
-    if (!("EnhancedVolcano" %in% installed.packages())) {
-      # Install this package if it isn't installed yet
-      BiocManager::install("EnhancedVolcano", update = FALSE)
-    }
-    if (!("apeglm" %in% installed.packages())) {
-      # Install this package if it isn't installed yet
-      BiocManager::install("apeglm", update = FALSE)
-    }
-
+    
     # Attach the DESeq2 library
     library(DESeq2)
-
-    # Attach the ggplot2 library for plotting
-    library(ggplot2)
-
-    # We will need this so we can use the pipe: %>%
-    library(magrittr)
     ```
-
+    
     Alright, let's prep the metadata to better select what we need.
 
     ```{r include=FALSE}
@@ -278,6 +252,97 @@ plot(density(justPlotThis$Range))
         diabetes = factor(diabetes, levels = c("reference", "diabetic"))
       )
     ```
+    
+    ```{r}
+    round_culled_expression_df <- round(culled_expression_df)
+
+    
+    ddset <- DESeqDataSetFromMatrix(
+      # Here we supply non-normalized count data
+      countData = round_culled_expression_df,
+      # Supply the `colData` with our metadata data frame
+      colData = culledMeta,
+      # Supply our diabetes variable to `design`
+      design = ~diabetes #Diabetes_status
+    )
+    
+    dds_norm <- vst(ddset)
+    
+    plotPCA(
+      dds_norm,
+      intgroup = "diabetes"
+    )
+    
+    pca_results <-
+      plotPCA(
+        dds_norm,
+        intgroup = c("diabetes"),
+        returnData = TRUE # This argument tells R to return the PCA values
+      )
+    
+    ```
+- PCA Plot Summary
+
+
+
+-   If you have 3 or 4 students in your group, also generate either t-SNE or UMAP plot, and summarize the differences and similarities between your two plots.
+-   UMAP (example here)
+```{r}
+library("umap")
+
+gene <- DESeqDataSetFromMatrix(
+  countData = round_culled_expression_df, # Counts values for all samples in our rounded dataset
+  colData = culledMeta, #  Supply the `colData` with our metadata data frame
+  design = ~diabetes #Supply our diabetes variable to `design`
+  # Diabetes_status
+)
+gene_norm <- vst(gene)
+normalized_counts <- assay(gene_norm) %>%
+  t() # transpose this data so each row is a sample
+umap_results <- umap::umap(normalized_counts)
+umap_plot_df <- data.frame(umap_results$layout) %>%
+  # Turn sample IDs from row names into a column
+  tibble::rownames_to_column("refinebio_accession_code") %>%
+  # Add the metadata into this data frame. Match by sample IDs
+  dplyr::inner_join(metadata, by = "refinebio_accession_code")
+umap_plot_df
+ggplot(
+  umap_plot_df,
+  aes(
+    x = X1,
+    y = X2,
+    color = diabetes
+  )
+) +
+  geom_point() # Plot individual points to make a scatterplot
+```
+
+-   Save your plot(s) and summarize your findings.
+
+### 3. Perform differential analysis on the samples from your two groups, following the directions below
+
+-   alexslemonade.github.io/refinebio-examples/03-rnaseq/differential-expression_rnaseq_01.html
+
+-   Create a volcano plot of your data, following the directions above
+
+    ```{r include=FALSE}
+    if (!("EnhancedVolcano" %in% installed.packages())) {
+      # Install this package if it isn't installed yet
+      BiocManager::install("EnhancedVolcano", update = FALSE)
+    }
+    if (!("apeglm" %in% installed.packages())) {
+      # Install this package if it isn't installed yet
+      BiocManager::install("apeglm", update = FALSE)
+    }
+
+    # Attach the ggplot2 library for plotting
+    library(ggplot2)
+
+    # We will need this so we can use the pipe: %>%
+    library(magrittr)
+    ```
+
+    
 
     Volcano plot time.
 
