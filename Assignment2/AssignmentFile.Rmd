@@ -4,26 +4,45 @@ output:
   pdf_document: default
   html_document:
     df_print: paged
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
-## Welcome to Assignemnt 2, Data Exploration
+## Welcome to Assignment 2, Data Exploration
 
 # Instructions:
 
-[Beyond simply running the code below, please insert your data files in the data directory such that the single folder from refine.bio containing the metadata TSV and main TSV file are present in the immediate subdirectory. This can be downloaded from google drive, [here!](https://drive.google.com/file/d/1aOnupOgIn-b7rSoGdRflNBvpfQPcR5v5/view?usp=sharing "Download folder to be unzipped as subdirectory of Data!")]{.underline}
+[Beyond simply running the code below, please insert your data files in
+the data directory such that the single folder from refine.bio
+containing the metadata TSV and main TSV file are present in the
+immediate subdirectory. This can be downloaded from google drive,
+[here!](https://drive.google.com/file/d/1aOnupOgIn-b7rSoGdRflNBvpfQPcR5v5/view?usp=sharing "Download folder to be unzipped as subdirectory of Data!")]{.underline}
 
-[Below we've transcribed the assignment instructions with corresponding code blocks beneath each.]{.underline}
+[Below we've transcribed the assignment instructions with corresponding
+code blocks beneath each.]{.underline}
 
 [🚨Please note,]{.underline}
 
--   [underlined writing implies it is from us and not the instructions]{.underline}
+-   [underlined writing implies it is from us and not the
+    instructions]{.underline}
 
--   [numerous code blocks were directly excerpted, adapted, and reused from the provided instructions / guidance. We do not believe this to be plagiarism and hope that in declaring it up front we demonstrate our honest intent. The sources used are found in the instructions (which are transcribed in full on this document), and due to how closely the guidance reflected the tasks of the assignment, we felt it wholly appropriate to directly use the best practices provided directly to us for this purpose.]{.underline}
+-   [numerous code blocks were directly excerpted, adapted, and reused
+    from the provided instructions / guidance. We do not believe this to
+    be plagiarism and hope that in declaring it up front we demonstrate
+    our honest intent. The sources used are found in the instructions
+    (which are transcribed in full on this document), and due to how
+    closely the guidance reflected the tasks of the assignment, we felt
+    it wholly appropriate to directly use the best practices provided
+    directly to us for this purpose.]{.underline}
 
--   [Task 7: Annotating our tables, has been performed inline, in a more traditional notebook manner. We do not reserve the annotations for step 7 and instead hope to meet the criteria by elaborating on all provided images and tables directly adjacent to each.]{.underline}
+-   [Task 7: Annotating our tables, has been performed inline, in a more
+    traditional notebook manner. We do not reserve the annotations for
+    step 7 and instead hope to meet the criteria by elaborating on all
+    provided images and tables directly adjacent to each.]{.underline}
 
 ```{r}
-# Install requisite libraries
+# Mount requisite libraries
 library(dplyr)
 library(tidyverse)
 library(readr)
@@ -31,9 +50,14 @@ library(readr)
 
 ### 1. Download the expression data and matching metadata from Refine.Bio that you selected in Assignment 1.
 
--   You should have a matrix of samples by genes expression data. If your matrix has Ensembl IDs (e.g. ENSG00000141510) instead of Hugo gene names (e.g. TP53), convert the names following these directions:
+-   You should have a matrix of samples by genes expression data. If
+    your matrix has Ensembl IDs (e.g. ENSG00000141510) instead of Hugo
+    gene names (e.g. TP53), convert the names following these
+    directions:
 
-    -   alexslemonade.github.io/refinebio-examples/03-rnaseq/gene-id-annotation_rnaseq_01_ensembl.html bioconductor.org/help/course-materials/2019/BSS2019/05_Annotations.html - org.hs.eg.db
+    -   alexslemonade.github.io/refinebio-examples/03-rnaseq/gene-id-annotation_rnaseq_01_ensembl.html
+        bioconductor.org/help/course-materials/2019/BSS2019/05_Annotations.html -
+        org.hs.eg.db
 
 -   Load the data into R.
 
@@ -60,7 +84,7 @@ if (!dir.exists(results_dir)) {
 }
 ```
 
-[🚨Pause here and load the data.]{.underline}
+### [🚨Pause here and load the data.]{.underline}
 
 ```{r}
 # Define the file path to the data directory
@@ -84,16 +108,14 @@ file.exists(data_file)
 file.exists(metadata_file)
 ```
 
-This next step loads the data and annotation libraries which may take from 30 seconds to 2 minutes.
+This next step loads data and annotation libraries, a 30-second ordeal.
 
 ```{r include=FALSE}
-# Install the Zebrafish package
+#Install and attach the Homo Sapiens annotation package.
 if (!("org.Hs.eg.db" %in% installed.packages())) {
-  # Install this package if it isn't installed yet
   BiocManager::install("org.Hs.eg.db", update = FALSE)
 }
 
-# Attach the library
 library(org.Hs.eg.db)
 
 # We will need this so we can use the pipe: %>%
@@ -104,7 +126,9 @@ metadata <- readr::read_tsv(metadata_file)
 expression_df <- readr::read_tsv(data_file) %>%
   # Tuck away the Gene ID column as row names
   tibble::column_to_rownames("Gene")
+```
 
+```{r}
 #Seemingly like a left-join
 # Make the data in the order of the metadata
 expression_df <- expression_df %>%
@@ -117,7 +141,6 @@ all.equal(colnames(expression_df), metadata$refinebio_accession_code)
 expression_df <- expression_df %>%
   tibble::rownames_to_column("Gene")
 
-
 # Map Ensembl IDs to their associated Entrez IDs
 mapped_list <- mapIds(
   org.Hs.eg.db, # Replace with annotation package for your organism
@@ -126,9 +149,7 @@ mapped_list <- mapIds(
   column = "ENTREZID", # The type of gene identifiers you would like to map to
   multiVals = "list"
 )
-```
 
-```{r}
 head(mapped_list) #Amazing.
 ```
 
@@ -149,7 +170,8 @@ dim(expression_df)
 
 How many genes does it include?
 
-[43363 ensembl IDs OR 44380 Entrez IDs. 13996 Ensembl's had no ENTREZ IDs, but some mapped to many...]{.underline}
+[43363 ensembl IDs OR 44380 Entrez IDs. 13996 Ensembl's had no ENTREZ
+IDs, but some mapped to many...]{.underline}
 
 ```{r}
 summary(as.factor(mapped_df$Entrez), maxsum = 5)
@@ -166,17 +188,20 @@ multi_mapped <- mapped_df %>%
 head(multi_mapped)
 ```
 
-[Looks like some ensemblIDs mapped to as many as 210 Entrez IDs...]{.underline}
+[Looks like some ensemblIDs mapped to as many as 210 Entrez
+IDs...]{.underline}
 
-How much variation do you see in the data? To answer these questions, log-scale the data, calculate per-gene median expression ranges, then make a density plot showing those results.
+How much variation do you see in the data? To answer these questions,
+log-scale the data, calculate per-gene median expression ranges, then
+make a density plot showing those results.
 
 ```{r include=FALSE}
 #Log scale the data
-
 logscaleData <- expression_df
 logscaleData[, -1] <- log(logscaleData[, -1])
 logscaleData$median = apply(logscaleData[, -1], 1, median)
 
+#Create a function to find ranges per row
 calculate_range <- function(row) {
   max_value <- max(row)
   min_value <- min(row)
@@ -184,9 +209,8 @@ calculate_range <- function(row) {
   return(range_value)
 }
 
-# Apply the function to each row of the matrix
+#Apply this to find ranges
 logscaleData$row_ranges <- apply(logscaleData[,-1], 1, calculate_range)
-
 ```
 
 ```{r}
@@ -200,6 +224,12 @@ justPlotThis <- justPlotThis %>%
 
 plot(density(justPlotThis$Median))
 ```
+
+[The above density plot simply shows the density of the median values.
+It is barely bimodal with a second group visible at just over 1, these
+genes being the small group that is being expressed more than the
+majority.]{.underline}
+
 ```{r}
 # First let's install the requisite libraries.
     if (!("affy" %in% installed.packages())) {
@@ -220,25 +250,49 @@ plotDensity(log(expression_df+1), col=rep(myColors, each=3),
             main='Expression Density Distribution')
 ```
 
-
 #### Summarize your findings.
 
-[The majority of the genes show negative median log-scaled expression, implying a lack of correlation. However, a group can be seen with values near 1-2 on the median log scale. These imply that the genes in this group are those which, relative to other genes gathered from the pancreatic islet cells samples, are being expressed the most. This stands against no particular control, however, and so does not yield any meaningful conclusions of the genes at hand being diabetic, but rather just genes that are expressed more.]{.underline}
+[The majority of the genes show negative median log-scaled expression (0
+to 1), simply implying minimal expression relative to other genes.
+However, a group can be seen with values near 1-2. These imply that the
+genes in this group are those which, relative to other genes gathered
+from the pancreatic islet cells samples, are being expressed the most.
+This stands against no particular control, however, and so does not
+yield any meaningful conclusions of the genes at hand being diabetic,
+but rather just genes that are expressed more.]{.underline}
 
 ```{r}
 plot(density(justPlotThis$Range))
 ```
 
-[The range density plot shows an intriguing bimodal distribution. A large group of genes has a minimal range, whereas the majority of the genes fall close to a range of 3.5 (log scale) in expression between samples. Genes with a low variability across all samples are not interesting since this data set contains both diabetic and control patients.]{.underline}
+[The range density plot shows an intriguing bimodal distribution. A
+large group of genes has a minimal range, whereas the majority of the
+genes fall close to a range of 3.5 (log scale) in expression between
+samples. Genes with a low variability across all samples are not
+interesting since this data set contains both diabetic and control
+patients.]{.underline}
+
+```{r include=FALSE}
+#Cleanup
+rm(justPlotThis)
+rm(logscaleData)
+rm(mapped_df)
+rm(mapped_list)
+rm(multi_mapped)
+rm(myColors)
+rm(calculate_range)
+```
 
 ### 2. Now that you have loaded the expression data into R, generate a PCA plot:
 
--   If you have counts file(s), follow these DESeq2 directions to generate an expression matrix.
+-   If you have counts file(s), follow these DESeq2 directions to
+    generate an expression matrix.
 -   Use the DESeq2 function plotPCA() to generate your plot (see here)
--   Color your plot by the 2 groups you identified in assignment 1 (e.g., Diabetic vs Non-Diabetic)
+-   Color your plot by the 2 groups you identified in assignment 1
+    (e.g., Diabetic vs Non-Diabetic)
 -   Make sure you include a legend and label the axes!
 
-```{r}
+```{r include=FALSE}
 # First let's install the requisite libraries.
 if (!("DESeq2" %in% installed.packages())) {
   # Install this package if it isn't installed yet
@@ -309,7 +363,9 @@ pca_results <-
 
 -   PCA Plot Summary
 
--   If you have 3 or 4 students in your group, also generate either t-SNE or UMAP plot, and summarize the differences and similarities between your two plots.
+-   If you have 3 or 4 students in your group, also generate either
+    t-SNE or UMAP plot, and summarize the differences and similarities
+    between your two plots.
 
 -   UMAP (example here)
 
@@ -344,6 +400,19 @@ ggplot(
 ```
 
 -   Save your plot(s) and summarize your findings.
+
+```{r}
+#Cleanup
+rm(dds_norm)
+rm(gene)
+rm(gene_norm)
+rm(new_expression_df)
+rm(normalized_counts)
+rm(pca_results)
+rm(umap_plot_df)
+rm(umap_results)
+rm(ddset)
+```
 
 ### 3. Perform differential analysis on the samples from your two groups, following the directions below
 
@@ -444,34 +513,106 @@ ggplot(
     )
     ```
 
-[It seems a handful of genes have stood out as having significant fold change in bot the positive and negative direction relative to the control. Of the 6827 genes examined, 357 meet the threshold discovered for significant change in differential expression, visualized as north of the grey line towards the bottom of the volcano plot. Some are exceptionally negative / positive, and are labeled for their uniqueness.]{.underline}
+[It seems a handful of genes have stood out as having significant fold
+change in bot the positive and negative direction relative to the
+control. Of the 6827 genes examined, 357 meet the threshold discovered
+for significant change in differential expression, visualized as north
+of the grey line towards the bottom of the volcano plot. Some are
+exceptionally negative / positive, and are labeled for their
+uniqueness.]{.underline}
+
+```{r}
+#Cleanup
+
+```
 
 ### 4. Extract the list of significantly differentially expressed genes, and generate a heatmap using ComplexHeatmap
 
--   Package reference (<https://jokergoo.github.io/ComplexHeatmap-reference/book/>)
+-   Package reference
+    (<https://jokergoo.github.io/ComplexHeatmap-reference/book/>)
 
 -   Add a side bar colored by sample groupings (cancer vs not, etc.)
 
-```{r eval=FALSE}
-deseq_df_enr<-deseq_df[(deseq_df$threshold==TRUE),]
-ht = ComplexHeatmap::Heatmap(deseq_df_enr)
+```{r include=FALSE}
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
 
+BiocManager::install("ComplexHeatmap")
+```
+
+```{r}
+#transpose expression_df so it can merge
+#extract only the Gene column from data
+transposed <- expression_df
+transposed <- t(transposed)
+transposed <- as.data.frame(transposed)
+transposed <- transposed %>%
+  tibble::rownames_to_column("Code")
+transposed <- transposed[-1,]
+```
+
+```{r}
+#rename ascession_code in copy of metadata to "Code" for merge to work, and cull unneeded columns
+metadata_test <- metadata
+names(metadata_test)[names(metadata_test) == "refinebio_accession_code"] <- "Code"
+merge_filter = metadata_test[,c("Code","refinebio_subject")]
+
+#merge culled metadata with transposed
+merged <- merge(transposed,merge_filter,by="Code")
+```
+
+```{r include=FALSE}
+#extract ONLY significantly expressed genes
+deseq_df_enr <- readr::read_tsv(file.path(results_dir, "diff_expr_results.tsv"))
+deseq_df_enr<-deseq_df_enr[(deseq_df_enr$threshold==TRUE),]
+
+merged <- merged[,c("refinebio_subject", deseq_df_enr$Gene)]
+```
+
+```{r}
+#group by refinebio subject
+merged <- aggregate(merged, list(merged$refinebio_subject), FUN=mean)
+merged <- merged[-c(2)] %>% 
+  column_to_rownames(var="Group.1")
+
+row_names_df_to_remove<-c("pancreatic islets")
+merged <- merged[!(row.names(merged) %in% row_names_df_to_remove),]
+
+#heatmap
+ht = heatmap(merged)
 ComplexHeatmap::draw(ht)
 ```
 
 #### HEATMAP SUMMARY:
-Due to a number of limitations and obstacles we encountered over the course of doing task #4, we have not included a heatmap using ComplexHeatmap, although we did generate several test Heatmaps. In terms of data, we faced a performance bottleneck due to the extremely large amount of genes present in our dataset, and so our devices took extremely long periods of time to calculate even basic heat maps. In addition, the premise of seprating genes in the sidebar based on their relationship to diabetic/nondiabetic samples was somewhat confusing because such a binary value is contradictory with the purpose of a heatmap. Several youtube resources guided us towards instead attemmpting to reduce our sample size, but this proved very challenging. Had we more time, we'd attempted the following:
-- Transpose original data
-- Left join meta data on Accession Code
-- Group by refineBio_subject, averaging accross genes within subject groups to achieve mean expressions
-- Omit all further columns
-- transpose data back, and plot with X axis of 20 subjects, y axis of 355 most significant genes, and a heatmap of log2fold diff expression.
 
-We provide the original code for our initial, very crude Heatmap, to demonstrate our usage of ComplexHeatmap in this task. We hope that the profoundly large dataset we use and the additional challenges faced in attempting such aggregation will be considered in our failure to produce a meaningful output.
+Due to a number of limitations and obstacles we encountered over the
+course of doing task #4, we have not included a heatmap using
+ComplexHeatmap, although we did generate several test Heatmaps. In terms
+of data, we faced a performance bottleneck due to the extremely large
+amount of genes present in our dataset, and so our devices took
+extremely long periods of time to calculate even basic heat maps. In
+addition, the premise of seprating genes in the sidebar based on their
+relationship to diabetic/nondiabetic samples was somewhat confusing
+because such a binary value is contradictory with the purpose of a
+heatmap. Several youtube resources guided us towards instead attemmpting
+to reduce our sample size, but this proved very challenging. Had we more
+time, we'd attempted the following: - Transpose original data - Left
+join meta data on Accession Code - Group by refineBio_subject, averaging
+accross genes within subject groups to achieve mean expressions - Omit
+all further columns - transpose data back, and plot with X axis of 20
+subjects, y axis of 355 most significant genes, and a heatmap of
+log2fold diff expression.
+
+We provide the original code for our initial, very crude Heatmap, to
+demonstrate our usage of ComplexHeatmap in this task. We hope that the
+profoundly large dataset we use and the additional challenges faced in
+attempting such aggregation will be considered in our failure to produce
+a meaningful output.
 
 ### 5. Run enrichment analysis on your data using your selected method and ontology
 
-Extract the list of deferentially expressed genes and run enrichment analysis.
+Extract the list of deferentially expressed genes and run enrichment
+analysis.
 
 ```{r include=FALSE}
 #Extracting differentially expressed genes:
@@ -489,20 +630,41 @@ readr::write_tsv(
 
 ```
 
-Each student in your team should run a different method OR ontology (e.g., if there are 4 students on the team, there should be results for 4 applications in your assignment writeup).
+Each student in your team should run a different method OR ontology
+(e.g., if there are 4 students on the team, there should be results for
+4 applications in your assignment writeup).
 
 -   Choose a method:
 
     -   gProfiler2
 
-[We have opted to use gprofiler2 to avoid the challenges associated with writing R and manipulating our already conclusive data. All three of us are exploring three different ontologies: Biological pathways (<GO:BP>), Molecular Function (<GO:MF>), and Cellular Components (<GO:CC>). The above code isolates only statistically significant genes which we can then paste into gprofiler/gost. Seeing as part 5 contains no further instructions, see part 6 for corresponding write up.]{.underline}
+[We have opted to use gprofiler2 to avoid the challenges associated with
+writing R and manipulating our already conclusive data. All three of us
+are exploring three different ontologies: Biological pathways (<GO:BP>),
+Molecular Function (<GO:MF>), and Cellular Components (<GO:CC>). The
+above code isolates only statistically significant genes which we can
+then paste into gprofiler/gost. Seeing as part 5 contains no further
+instructions, see part 6 for corresponding write up.]{.underline}
 
 ### 6. Create a table of the enriched processes found for each method in step 4 (one table per method). Create a table showing statistically significantly enriched terms and any characteristics shared by the method you used (e.g., q-value, p-value, log fold change)
 
 ![im3](https://cdn.discordapp.com/attachments/1148297410318176256/1156772921298124830/gProfiler_hsapiens_2023-09-28_01-39-56.png)
-![im3](https://cdn.discordapp.com/attachments/1148297410318176256/1156772921298124830/gProfiler_hsapiens_2023-09-28_01-39-56.png)
 
-[The above table was produced using gost, an online tool that attempts to display genes clustered by various ontologies, ontologies being such significance as the molecule to which they contribute, regulatory effects they perform, or relationship with a disease among other categories. Of signficance is cytoplasmic relationship within particularly the <GO:CC> table. We can see a very significant P value here of 1.324x10\^-14, which is seemingly reasonable since diabetes would influence certain metabolic pathways naturally present in the cytoplasm, or so we would assume from the results. Biological quality regulation was also closely tied to the differential expression of our genes, as well as protein binding, this last one falling under molecular function. This is intriguing as it may relate to insulin receptors' capacity to bind free glucose, though it is our understanding that this is a fundamental quality not only of pancreatic islet cells but of all somatic cells participating in metabolism.]{.underline}
+[The above table was produced using gost, an online tool that attempts
+to display genes clustered by various ontologies, ontologies being such
+significance as the molecule to which they contribute, regulatory
+effects they perform, or relationship with a disease among other
+categories. Of signficance is cytoplasmic relationship within
+particularly the <GO:CC> table. We can see a very significant P value
+here of 1.324x10\^-14, which is seemingly reasonable since diabetes
+would influence certain metabolic pathways naturally present in the
+cytoplasm, or so we would assume from the results. Biological quality
+regulation was also closely tied to the differential expression of our
+genes, as well as protein binding, this last one falling under molecular
+function. This is intriguing as it may relate to insulin receptors'
+capacity to bind free glucose, though it is our understanding that this
+is a fundamental quality not only of pancreatic islet cells but of all
+somatic cells participating in metabolism.]{.underline}
 
 ### 7. Write a short summary to go with each plot/table you create. Describe what you did, what parameters you used (if any) and an interesting result from it.
 
