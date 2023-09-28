@@ -412,7 +412,7 @@ umap_plot_df <- data.frame(umap_results$layout) %>%
   tibble::rownames_to_column("refinebio_accession_code") %>%
   # Add the metadata into this data frame. Match by sample IDs
   dplyr::inner_join(metadata, by = "refinebio_accession_code")
-umap_plot_df
+#umap_plot_df (no need to show table, takes up 100 pages on pdf)
 ggplot(
   umap_plot_df,
   aes(
@@ -535,7 +535,7 @@ identifying clusters in high-dimensional data.
 -   Create a table of differentially expressed genes.
 
     ```{r}
-    deseq_df
+    head(deseq_df)
     ```
 
 -   Save and summarize your findings.
