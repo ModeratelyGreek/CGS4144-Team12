@@ -577,9 +577,12 @@ merged <- merged[-c(2)] %>%
 
 row_names_df_to_remove<-c("pancreatic islets")
 merged <- merged[!(row.names(merged) %in% row_names_df_to_remove),]
+```
+
+```{r}
 
 #heatmap
-ht = heatmap(merged)
+ht = ComplexHeatmap::Heatmap(merged)
 ComplexHeatmap::draw(ht)
 ```
 
