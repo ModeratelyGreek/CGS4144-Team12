@@ -1,5 +1,6 @@
 # Date Files:
-diff_expr_results_enr.tsv
+*.tsv
+*.tex
 Assignment2/data/
 # Byte-compiled / optimized / DLL files
 __pycache__/
