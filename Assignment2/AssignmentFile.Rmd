@@ -196,6 +196,26 @@ justPlotThis <- justPlotThis %>%
 
 plot(density(justPlotThis$Median))
 ```
+```{r}
+# First let's install the requisite libraries.
+    if (!("affy" %in% installed.packages())) {
+      # Install this package if it isn't installed yet
+      BiocManager::install("affy", update = FALSE)
+    }
+    
+expression_df <- readr::read_tsv(data_file) %>%
+  # Tuck away the Gene ID column as row names
+  tibble::column_to_rownames("Gene")
+
+library(scales)
+library(affy)
+myColors <- hue_pal()(4)
+
+plotDensity(log(expression_df+1), col=rep(myColors, each=3),
+            lty=c(1:ncol(logscaleData)), xlab='Log(count)',
+            main='Expression Density Distribution')
+```
+
 
 #### Summarize your findings.
 
@@ -282,8 +302,6 @@ plot(density(justPlotThis$Range))
     
     ```
 - PCA Plot Summary
-
-
 
 -   If you have 3 or 4 students in your group, also generate either t-SNE or UMAP plot, and summarize the differences and similarities between your two plots.
 -   UMAP (example here)
@@ -428,6 +446,23 @@ ggplot(
 
 -   Add a side bar colored by sample groupings (cancer vs not, etc.)
 
+```{r eval=FALSE}
+deseq_df_enr<-deseq_df[(deseq_df$threshold==TRUE),]
+ht = ComplexHeatmap::Heatmap(deseq_df_enr)
+
+ComplexHeatmap::draw(ht)
+```
+
+#### HEATMAP SUMMARY:
+Due to a number of limitations and obstacles we encountered over the course of doing task #4, we have not included a heatmap using ComplexHeatmap, although we did generate several test Heatmaps. In terms of data, we faced a performance bottleneck due to the extremely large amount of genes present in our dataset, and so our devices took extremely long periods of time to calculate even basic heat maps. In addition, the premise of seprating genes in the sidebar based on their relationship to diabetic/nondiabetic samples was somewhat confusing because such a binary value is contradictory with the purpose of a heatmap. Several youtube resources guided us towards instead attemmpting to reduce our sample size, but this proved very challenging. Had we more time, we'd attempted the following:
+- Transpose original data
+- Left join meta data on Accession Code
+- Group by refineBio_subject, averaging accross genes within subject groups to achieve mean expressions
+- Omit all further columns
+- transpose data back, and plot with X axis of 20 subjects, y axis of 355 most significant genes, and a heatmap of log2fold diff expression.
+
+We provide the original code for our initial, very crude Heatmap, to demonstrate our usage of ComplexHeatmap in this task. We hope that the profoundly large dataset we use and the additional challenges faced in attempting such aggregation will be considered in our failure to produce a meaningful output.
+
 ### 5. Run enrichment analysis on your data using your selected method and ontology
 
 Extract the list of deferentially expressed genes and run enrichment analysis.
@@ -458,17 +493,17 @@ Each student in your team should run a different method OR ontology (e.g., if th
 
 ### 6. Create a table of the enriched processes found for each method in step 4 (one table per method). Create a table showing statistically significantly enriched terms and any characteristics shared by the method you used (e.g., q-value, p-value, log fold change)
 
-![](https://cdn.discordapp.com/attachments/1148297410318176256/1156772921298124830/gProfiler_hsapiens_2023-09-28_01-39-56.png){width="1684"}
+![im3](https://cdn.discordapp.com/attachments/1148297410318176256/1156772921298124830/gProfiler_hsapiens_2023-09-28_01-39-56.png)
 
-[The above table was produced using gost, an online tool that attempts to display genes clustered by various ontologies, ontologies being such significance as the molecule to which they contribute, regulatory effects they perform, or relationship with a disease among other categories.]{.underline}
+[The above table was produced using gost, an online tool that attempts to display genes clustered by various ontologies, ontologies being such significance as the molecule to which they contribute, regulatory effects they perform, or relationship with a disease among other categories. Of signficance is cytoplasmic relationship within particularly the GO:CC table. We can see a very significant P value here of 1.324x10^-14, which is seemingly reasonable since diabetes would influence certain metabolic pathways naturally present in the cytoplasm, or so we would assume from the results. Biological quality regulation was also closely tied to the differential expression of our genes, as well as protein binding, this last one falling under molecular function. This is intriguing as it may relate to insulin receptors' capacity to bind free glucose, though it is our understanding that this is a fundamental quality not only of pancreatic islet cells but of all somatic cells participating in metabolism.]{.underline}
 
 ### 7. Write a short summary to go with each plot/table you create. Describe what you did, what parameters you used (if any) and an interesting result from it.
 
 ## As a team, fill out the team evaluation table below.
 
-![](https://cdn.discordapp.com/attachments/1148297410318176256/1156784591059816558/image.png?ex=65163b1a&is=6514e99a&hm=4dfb295680e00fbf4482297becc8afc8b988b00e1627597c698ed51f30679806&)
+![im1](https://cdn.discordapp.com/attachments/1148297410318176256/1156784591059816558/image.png)
 
-![](https://cdn.discordapp.com/attachments/1148297410318176256/1156784591059816558/image.png?ex=65163b1a&is=6514e99a&hm=4dfb295680e00fbf4482297becc8afc8b988b00e1627597c698ed51f30679806&)
+![im2](https://cdn.discordapp.com/attachments/1148297410318176256/1156784591059816558/image.png)
 
 ### 8. Combine all into a single file and submit on Canvas. Make sure that all your code is added to your GitHub repository.
 
