@@ -1,11 +1,12 @@
 ---
 title: "R Notebook"
 output:
-  pdf_document: default
   html_document:
     df_print: paged
-editor_options: 
-  markdown: 
+  pdf_document: default
+  word_document: default
+editor_options:
+  markdown:
     wrap: 72
 ---
 
@@ -16,7 +17,7 @@ editor_options:
 [Below we've transcribed the assignment instructions with corresponding
 code blocks beneath each.]{.underline}
 
-[🚨Please note,]{.underline}
+[Please note,]{.underline}
 
 -   [underlined writing implies it is from us and not the
     instructions]{.underline}
@@ -35,7 +36,7 @@ code blocks beneath each.]{.underline}
     step 7 and instead hope to meet the criteria by elaborating on all
     provided images and tables directly adjacent to each.]{.underline}
 
--   [⭐️ Stars are used to denote items corresponding directly to the
+-   [ Stars are used to denote items corresponding directly to the
     rubric]{.underline}
 
 ```{r}
@@ -81,7 +82,7 @@ if (!dir.exists(results_dir)) {
 }
 ```
 
-### [🚨Pause here and load the data.]{.underline}
+### [Pause here and load the data.]{.underline}
 
 [Please insert your data files in the data directory such that the
 single folder from refine.bio containing the metadata TSV and main TSV
@@ -606,7 +607,7 @@ deseq_df_enr<-deseq_df_enr[(deseq_df_enr$threshold==TRUE),]
 merged <- merged[,c("refinebio_subject", deseq_df_enr$Gene)]
 ```
 
-```{r}
+```{r include=FALSE}
 #group by refinebio subject
 new_merged <- aggregate(merged, list(merged$refinebio_subject), FUN=mean)
 new_merged <- new_merged[order(new_merged$Group.1),]
@@ -703,4 +704,4 @@ somatic cells participating in metabolism.]{.underline}
 
 ### 8. Combine all into a single file and submit on Canvas. Make sure that all your code is added to your GitHub repository.
 
-# ✅
+
