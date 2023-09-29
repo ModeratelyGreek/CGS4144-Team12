@@ -1,4 +1,9 @@
 # Date Files:
+*.aux
+*.pdf
+*.synctex.gz
+*.tsv
+*.tex
 Assignment2/data/
 # Byte-compiled / optimized / DLL files
 __pycache__/

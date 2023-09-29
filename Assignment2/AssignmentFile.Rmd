@@ -4,20 +4,15 @@ output:
   pdf_document: default
   html_document:
     df_print: paged
-editor_options: 
-  markdown: 
+  word_document: default
+editor_options:
+  markdown:
     wrap: 72
 ---
 
 ## Welcome to Assignment 2, Data Exploration
 
 # Instructions:
-
-[Beyond simply running the code below, please insert your data files in
-the data directory such that the single folder from refine.bio
-containing the metadata TSV and main TSV file are present in the
-immediate subdirectory. This can be downloaded from google drive,
-[here!](https://drive.google.com/file/d/1aOnupOgIn-b7rSoGdRflNBvpfQPcR5v5/view?usp=sharing "Download folder to be unzipped as subdirectory of Data!")]{.underline}
 
 [Below we've transcribed the assignment instructions with corresponding
 code blocks beneath each.]{.underline}
@@ -40,6 +35,9 @@ code blocks beneath each.]{.underline}
     traditional notebook manner. We do not reserve the annotations for
     step 7 and instead hope to meet the criteria by elaborating on all
     provided images and tables directly adjacent to each.]{.underline}
+
+-   ⭐️ [Stars are used to denote items corresponding directly to the
+    rubric]{.underline}
 
 ```{r}
 # Mount requisite libraries
@@ -86,50 +84,49 @@ if (!dir.exists(results_dir)) {
 
 ### [🚨Pause here and load the data.]{.underline}
 
+[Please insert your data files in the data directory such that the
+single folder from refine.bio containing the metadata TSV and main TSV
+file are present in the immediate subdirectory. This can be downloaded
+from google drive,
+[here!](https://drive.google.com/file/d/1aOnupOgIn-b7rSoGdRflNBvpfQPcR5v5/view?usp=sharing "Download folder to be unzipped as subdirectory of Data!")]{.underline}
+
 ```{r}
 # Define the file path to the data directory
-# Replace with the path of the folder the files will be in
 data_dir <- file.path("data", "SRP075377")
 
-# Declare the file path to the gene expression matrix file
-# inside directory saved as `data_dir`
-# Replace with the path to your dataset file
+# Declare the file path to the gene expression matrix file inside directory saved as `data_dir`
 data_file <- file.path(data_dir, "SRP075377.tsv")
 
-# Declare the file path to the metadata file
-# inside the directory saved as `data_dir`
-# Replace with the path to your metadata file
+# Declare the file path to the metadata file inside the directory saved as `data_dir`
 metadata_file <- file.path(data_dir, "metadata_SRP075377.tsv")
 
-# Check if the gene expression matrix file is at the path stored in `data_file`
+# Check that files exist and are usable.
 file.exists(data_file)
-
-# Check if the metadata file is at the file path stored in `metadata_file`
 file.exists(metadata_file)
 ```
 
-This next step loads data and annotation libraries, a 30-second ordeal.
+[This next step loads data and annotation libraries per the
+instructions, but does not attempt to transform our Gene column to the
+Entrez IDs as this was unnecessary for downstream
+processing.]{.underline}
 
 ```{r include=FALSE}
 #Install and attach the Homo Sapiens annotation package.
 if (!("org.Hs.eg.db" %in% installed.packages())) {
   BiocManager::install("org.Hs.eg.db", update = FALSE)
 }
-
 library(org.Hs.eg.db)
 
-# We will need this so we can use the pipe: %>%
+# Attach library for pipe (%>%)
 library(magrittr)
 
-# Read in data and metadata  TSV file
+# Read in data and metadata TSV file and make Gene column into row names
 metadata <- readr::read_tsv(metadata_file)
 expression_df <- readr::read_tsv(data_file) %>%
-  # Tuck away the Gene ID column as row names
   tibble::column_to_rownames("Gene")
 ```
 
 ```{r}
-#Seemingly like a left-join
 # Make the data in the order of the metadata
 expression_df <- expression_df %>%
   dplyr::select(metadata$refinebio_accession_code)
@@ -164,7 +161,7 @@ mapped_df <- mapped_list %>%
 
 What size is your expression matrix?
 
-```{r }
+```{r}
 dim(expression_df)
 ```
 
@@ -222,7 +219,7 @@ justPlotThis <- justPlotThis %>%
     Range = row_ranges,
     )
 
-plot(density(justPlotThis$Median))
+plot(density(justPlotThis$Median), xlab="Median Expression Values", main="Density of Median Expression Values")
 ```
 
 [The above density plot simply shows the density of the median values.
@@ -250,6 +247,8 @@ plotDensity(log(expression_df+1), col=rep(myColors, each=3),
             main='Expression Density Distribution')
 ```
 
+[⭐️Density Plot Showing Variation in Each Gene's Expression]{.underline}
+
 #### Summarize your findings.
 
 [The majority of the genes show negative median log-scaled expression (0
@@ -262,7 +261,7 @@ yield any meaningful conclusions of the genes at hand being diabetic,
 but rather just genes that are expressed more.]{.underline}
 
 ```{r}
-plot(density(justPlotThis$Range))
+plot(density(justPlotThis$Range), xlab="Expression Value Ranges", main="Density of Expression Range Values")
 ```
 
 [The range density plot shows an intriguing bimodal distribution. A
@@ -384,13 +383,13 @@ pca_results <-
 
 ```
 
--   PCA Plot Summary
+[⭐️ PCA Plot Colored by Groups]{.underline}
 
--   PCA Plot Summary The PCA plot shows that the two groups diabetic and
-    non-diabetic separate into two different clusters. The non-diabetic
-    clusters tends to have less variance and is one uniform cluster
-    while the diabetic samples are separated into two different uniform
-    clusters that have more variance.
+-   PCA Plot Summary: [The PCA plot shows that the two groups diabetic
+    and non-diabetic separate into two different clusters. The
+    non-diabetic clusters tends to have less variance and is one uniform
+    cluster while the diabetic samples are separated into two different
+    uniform clusters that have more variance.]{.underline}
 
 -   If you have 3 or 4 students in your group, also generate either
     t-SNE or UMAP plot, and summarize the differences and similarities
@@ -403,7 +402,7 @@ library("umap")
 
 gene <- DESeqDataSetFromMatrix(
   countData = round_culled_expression_df, # Counts values for all samples in our rounded dataset
-  colData = culledMeta, #  Supply the `colData` with our metadata data frame
+  colData = culldMeta, #  Supply the `colData` with our metadata data frame
   design = ~diabetes #Supply our diabetes variable to `design`
   # Diabetes_status
 )
@@ -416,7 +415,7 @@ umap_plot_df <- data.frame(umap_results$layout) %>%
   tibble::rownames_to_column("refinebio_accession_code") %>%
   # Add the metadata into this data frame. Match by sample IDs
   dplyr::inner_join(metadata, by = "refinebio_accession_code")
-umap_plot_df
+#umap_plot_df (no need to show table, takes up 100 pages on pdf)
 ggplot(
   umap_plot_df,
   aes(
@@ -428,7 +427,21 @@ ggplot(
   geom_point() # Plot individual points to make a scatterplot
 ```
 
--   Save your plot(s) and summarize your findings.
+-   [⭐️ UMAP Colored by Groups (3+ Students)]{.underline}
+
+    Save your plot(s) and summarize your findings.
+
+-   UMAP Plot Summary - [The UMAP plot shows that the two groups are
+    clustered together in distinct groups. These clusters are the two
+    different cell types, diabetic and reference. There are a few
+    outliers in the plot where a few samples are displayed at the bottom
+    of the plot.]{.underline}
+
+-   PCA Plot vs UMAP Plot Comparison - [PCA is a linear technique that
+    captures global structure and is computationally efficient, while
+    UMAP is a nonlinear technique that excels at preserving local
+    structure, making it well-suited for exploring complex relationships
+    and identifying clusters in high-dimensional data.]{.underline}
 
 ```{r}
 #Cleanup
@@ -442,18 +455,6 @@ rm(umap_plot_df)
 rm(umap_results)
 rm(ddset)
 ```
-
--   UMAP Plot Summary The UMAP plot shows that the two groups are
-    clustered together in distinct groups. These clusters are the two
-    different cell types, diabetic and reference. There are a few
-    outliers in the plot where a few samples are displayed at the bottom
-    of the plot.
-
-PCA Plot vs UMAP Plot Comparison - PCA is a linear technique that
-captures global structure and is computationally efficient, while UMAP
-is a nonlinear technique that excels at preserving local structure,
-making it well-suited for exploring complex relationships and
-identifying clusters in high-dimensional data.
 
 ### 3. Perform differential analysis on the samples from your two groups, following the directions below
 
@@ -531,6 +532,10 @@ identifying clusters in high-dimensional data.
 
     ```
 
+    \
+    [⭐️Volcano Plot Showing Log Fold Change and
+    Significance]{.underline}
+
     ```{r}
     # Print out plot here
     volcano_plot
@@ -538,8 +543,12 @@ identifying clusters in high-dimensional data.
 
 -   Create a table of differentially expressed genes.
 
+    ⭐️Table of statistically significant differentially expression genes
+    including method-dependent relevant info (p-value, log fold change,
+    etc).
+
     ```{r}
-    deseq_df
+    head(deseq_df)
     ```
 
 -   Save and summarize your findings.
@@ -610,48 +619,51 @@ deseq_df_enr<-deseq_df_enr[(deseq_df_enr$threshold==TRUE),]
 merged <- merged[,c("refinebio_subject", deseq_df_enr$Gene)]
 ```
 
-```{r}
+```{r include=FALSE}
 #group by refinebio subject
-merged <- aggregate(merged, list(merged$refinebio_subject), FUN=mean)
-merged <- merged[-c(2)] %>% 
+new_merged <- aggregate(merged, list(merged$refinebio_subject), FUN=mean)
+new_merged <- new_merged[order(new_merged$Group.1),]
+new_merged <- new_merged[-c(2)] %>% 
   column_to_rownames(var="Group.1")
 
 row_names_df_to_remove<-c("pancreatic islets")
-merged <- merged[!(row.names(merged) %in% row_names_df_to_remove),]
+new_merged <- new_merged[!(row.names(new_merged) %in% row_names_df_to_remove),]
 ```
 
 ```{r}
 
 #heatmap
-ht = ComplexHeatmap::Heatmap(merged)
+
+ht = ComplexHeatmap::Heatmap(new_merged,heatmap_legend_param = list(
+        title = "Expression", at = c(0, 50, 100,150)
+    ),column_title = "Significantly Differentially Expressed Genes Heatmap",show_column_names = FALSE,cluster_columns = FALSE,cluster_rows = FALSE)
 ComplexHeatmap::draw(ht)
 ```
 
-#### HEATMAP SUMMARY:
+⭐️[Heatmap created using ComplexHeatmap showing the differentially
+expressed genes. Side bar added that shows samples groups (cancer vs
+not).]{.underline}
 
-Due to a number of limitations and obstacles we encountered over the
-course of doing task #4, we have not included a heatmap using
-ComplexHeatmap, although we did generate several test Heatmaps. In terms
-of data, we faced a performance bottleneck due to the extremely large
-amount of genes present in our dataset, and so our devices took
-extremely long periods of time to calculate even basic heat maps. In
-addition, the premise of seprating genes in the sidebar based on their
-relationship to diabetic/nondiabetic samples was somewhat confusing
-because such a binary value is contradictory with the purpose of a
-heatmap. Several youtube resources guided us towards instead attemmpting
-to reduce our sample size, but this proved very challenging. Had we more
-time, we'd attempted the following: - Transpose original data - Left
-join meta data on Accession Code - Group by refineBio_subject, averaging
-accross genes within subject groups to achieve mean expressions - Omit
-all further columns - transpose data back, and plot with X axis of 20
-subjects, y axis of 355 most significant genes, and a heatmap of
-log2fold diff expression.
+### HEATMAP SUMMARY:
 
-We provide the original code for our initial, very crude Heatmap, to
-demonstrate our usage of ComplexHeatmap in this task. We hope that the
-profoundly large dataset we use and the additional challenges faced in
-attempting such aggregation will be considered in our failure to produce
-a meaningful output.
+[To create this Heatmap, we used ComplexHeatmap and simply aligned our
+raw data with the significantly expressed gene table, then fed in only
+the significantly expressed gene data to ComplexHeatmap. We also grouped
+this data by the subject, with "non t2d" denoting a subject without Type
+2 Diabetes and "t2d" denoting a subject with diabetes. We found that
+ComplexHeatmap's default settings clustered the rows and columns so that
+they appeared in a different order than how they appear in the input
+table. To fix this, we set cluster to FALSE for both rows and
+columns.]{.underline}
+
+[Based on this heatmap from our significantly expressed gene data, there
+does appear to be some degree of difference between how certain groups
+of genes are expressed across the subjects with diabetes and those
+without. Interestingly, there appear to be differences in how diabetes
+is expressed within the diabetes groups, with subjects 1,2, and 3
+differing from subjects 4,5, and 6. A similar division within the
+non-diabetes group, if it exists, does not appear to be quite as
+apparent.]{.underline}
 
 ### 5. Run enrichment analysis on your data using your selected method and ontology
 
@@ -670,8 +682,6 @@ readr::write_tsv(
     "diff_expr_results_enr.tsv" # Replace with a relevant output file name
   )
 )
-
-
 ```
 
 Each student in your team should run a different method OR ontology
@@ -692,34 +702,74 @@ instructions, see part 6 for corresponding write up.]{.underline}
 
 ### 6. Create a table of the enriched processes found for each method in step 4 (one table per method). Create a table showing statistically significantly enriched terms and any characteristics shared by the method you used (e.g., q-value, p-value, log fold change)
 
-![im3](https://cdn.discordapp.com/attachments/1148297410318176256/1156772921298124830/gProfiler_hsapiens_2023-09-28_01-39-56.png)
+![](https://cdn.discordapp.com/attachments/1148297410318176256/1156772921298124830/gProfiler_hsapiens_2023-09-28_01-39-56.png)
+
+⭐️ method/ontology pair per student, table for each method/ontology pair
+with enriched terms (GO, msigDB, etc)
+
+[(gost - Biological Pathways, gost - Molecular Function, gost - Cellular
+Components)]{.underline}
 
 [The above table was produced using gost, an online tool that attempts
 to display genes clustered by various ontologies, ontologies being such
 significance as the molecule to which they contribute, regulatory
 effects they perform, or relationship with a disease among other
-categories. Of signficance is cytoplasmic relationship within
-particularly the <GO:CC> table. We can see a very significant P value
-here of 1.324x10\^-14, which is seemingly reasonable since diabetes
-would influence certain metabolic pathways naturally present in the
-cytoplasm, or so we would assume from the results. Biological quality
-regulation was also closely tied to the differential expression of our
-genes, as well as protein binding, this last one falling under molecular
-function. This is intriguing as it may relate to insulin receptors'
-capacity to bind free glucose, though it is our understanding that this
-is a fundamental quality not only of pancreatic islet cells but of all
-somatic cells participating in metabolism.]{.underline}
+categories.]{.underline}
+
+![](https://media.discordapp.net/attachments/1148297410318176256/1157136634630914088/image.png?ex=651782f8&is=65163178&hm=d2169b4059aa2d790085602ebe26e99871f8838137e09a8539b807cd954dce10)
+
+[Of most signficance is cytoplasmic relationship within particularly the
+<GO:CC> table. We can see a very significant P value here of
+1.324x10\^-14, which is seemingly reasonable since diabetes would
+influence certain metabolic pathways naturally present in the cytoplasm,
+or so we would assume from the results. This lead to a further
+exploration on google scholar, which lead to [this
+paper.](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8115730/),
+suggesting that NADPH is depleted and lipogenesis from glucose dampened
+as a consequence of T2D in pancreatic islet cells. We can also see that
+functions relating to vesicles are affected, which falls in line with
+the paper's suggestion that secretion is hampered (note the secretory
+vesicle , around halfway down in terms of significance).]{.underline}
+
+![](https://media.discordapp.net/attachments/1148297410318176256/1157136583170990101/image.png?ex=651782eb&is=6516316b&hm=8aeebd2dd26d4821c6261d2d69e83c867157e9603f4e7ba4992e0f773dc64210.png)
+
+[Biological quality regulation was also closely tied to the differential
+expression of our genes, under the biological pathway ontology. This too
+is somewhat unsurprising, given this disease might be tied to
+underperformant pancreatic islet cells. Particularly the relation to
+"amide metabolic process" is more specific than the other points noted
+in the table, and prompted some investigation. [This
+paper](https://pubmed.ncbi.nlm.nih.gov/9421375/) seems to connect amides
+(which we recognize are just a molecular component) to insulin
+secretion, which confirms some of the findings from the cellular
+component ontological exploration above.]{.underline}
+
+![](https://media.discordapp.net/attachments/1148297410318176256/1157136538736529478/image.png?ex=651782e1&is=65163161&hm=a55dd1f1c74a8a45059a5707572a53639b89814596be219b20d76718aa27f9e5)
+
+[Finally we see a connection to protein binding and phosphoric diester
+hydrolase activity within the molecular function ontology. This is
+intriguing as it may relate to insulin receptors' capacity to bind free
+glucose, though it is our understanding that this is a fundamental
+quality not only of pancreatic islet cells but of all somatic cells
+participating in metabolism. Instead we explore phosphoric diester
+hydrolase activity in an effort to supplement our understanding: It
+turns out that phsophate diester hydrolases are closely tied to cAMP
+regulation which we know from AP Biology regulates the cell cycle in
+some capacity. When searching specifically for a connection to
+pancreatic islets however, we find [the following
+paper](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5587329/#:~:text=In%20addition%20to,conjugation%20with%20glutathione.)
+which seems to suggest a connection to type 1 diabetes in which this
+very class of enzyme's downregulation contributes to oxidative stress
+and general disfunction.]{.underline}
 
 ### 7. Write a short summary to go with each plot/table you create. Describe what you did, what parameters you used (if any) and an interesting result from it.
 
-## As a team, fill out the team evaluation table below.
+⭐️Done throughout.
+
+⭐️ As a team, fill out the team evaluation table below.
 
 ![im1](https://cdn.discordapp.com/attachments/1148297410318176256/1156784591059816558/image.png)
-![im1](https://cdn.discordapp.com/attachments/1148297410318176256/1156784591059816558/image.png)
 
-![im2](https://cdn.discordapp.com/attachments/1148297410318176256/1156784591059816558/image.png)
-![im2](https://cdn.discordapp.com/attachments/1148297410318176256/1156784591059816558/image.png)
+### 8. Combine all into a single file and submit on Canvas. Make sure that all your code is added to your GitHub repository. ✅
 
-### 8. Combine all into a single file and submit on Canvas. Make sure that all your code is added to your GitHub repository.
-
-# ✅
+[Github Link](https://github.com/Skunkmeister/CGS4144-Team12)
