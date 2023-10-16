@@ -1,5 +1,3 @@
-# Assignment 1!
-
 ## Question we'll be Answering:
 What genes are pertinent to type two diabetes in pancreatic islet cells, and how are they related accross humans and mice?
 
