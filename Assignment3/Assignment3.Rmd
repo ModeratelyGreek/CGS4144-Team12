@@ -40,6 +40,17 @@ code blocks beneath each.]{.underline}
 1.  Load into R the expression data and matching metadata that you
     processed in Assignment 2.
 
+[Please insert your data files in the data directory such that the
+single folder from refine.bio containing the metadata TSV and main TSV
+file are present in the immediate subdirectory. This can be downloaded
+from google drive,
+[here!](https://drive.google.com/file/d/1aOnupOgIn-b7rSoGdRflNBvpfQPcR5v5/view?usp=sharing "Download folder to be unzipped as subdirectory of Data!")]{.underline}
+
+[This next step loads data and annotation libraries per the
+instructions, but does not attempt to transform our Gene column to the
+Entrez IDs as this was unnecessary for downstream
+processing.]{.underline}
+
 ```{r}
 # Mount requisite libraries
 library(dplyr)
@@ -97,6 +108,8 @@ expression_df <- readr::read_tsv(data_file) %>%
         1.  K-means
         2.  Hierarchical clustering (hclust)
         3.  ConsensusClusterPlus
+        4.  PAM Clustering
+        5.  Gaussian Mixture Models
     c.  Each student in your team should run a different clustering
         method (e.g., if there are 4 students\
         on the team, there should be results for 4 clustering methods in
@@ -115,6 +128,27 @@ expression_df <- readr::read_tsv(data_file) %>%
             the different clustering setups\
             changed cluster memberships for each sample.
             ([https://cran.r](https://cran.r-)project.org/web/packages/ggalluvial/vignettes/ggalluvial.html)
+
+# Subsetting to Most Variable Genes
+
+```{r}
+# Calculate row variance
+row_variances <- apply(expression_df, 1, var)
+expression_df$row_variance <- row_variances
+
+# Sort by row variance
+expression_df <- expression_df[order(row_variances, decreasing = TRUE), ]
+
+# Remove the row variance columns
+expression_df$row_variances <- NULL
+
+# Keep quantities mentioned in part E
+top_10 <- head(expression_df, 10)
+top_100 <- head(expression_df, 100)
+top_1000 <- head(expression_df, 1000)
+top_5000 <- head(expression_df, 5000)
+top_10000 <- head(expression_df, 10000)
+```
 
 # Michael - ConsensusClusterPlus
 
@@ -154,23 +188,7 @@ BiocManager::install("ConsensusClusterPlus")
 7.  Combine all results into a single file, submit on Canvas. Make sure
     that all your code is added to your GitHub repository.
 
-### 1. Download the expression data and matching metadata from Refine.Bio that you selected in Assignment 1.
-
--   You should have a matrix of samples by genes expression data. If
-    your matrix has Ensembl IDs (e.g. ENSG00000141510) instead of Hugo
-    gene names (e.g. TP53), convert the names following these
-    directions:
-
-    -   alexslemonade.github.io/refinebio-examples/03-rnaseq/gene-id-annotation_rnaseq_01_ensembl.html
-        bioconductor.org/help/course-materials/2019/BSS2019/05_Annotations.html -
-        org.hs.eg.db
-
--   Load the data into R.
-
-```         
-```
-
-### [🚨Pause here and load the data.]{.underline}
+### 🚨🚨🚨🚨🚨🚨🚨🚨🚨Everything Below this Point is Assignment 2 🚨🚨🚨🚨🚨🚨🚨🚨🚨
 
 [Please insert your data files in the data directory such that the
 single folder from refine.bio containing the metadata TSV and main TSV
@@ -183,55 +201,6 @@ instructions, but does not attempt to transform our Gene column to the
 Entrez IDs as this was unnecessary for downstream
 processing.]{.underline}
 
-```{r include=FALSE}
-#Install and attach the Homo Sapiens annotation package.
-if (!("org.Hs.eg.db" %in% installed.packages())) {
-  BiocManager::install("org.Hs.eg.db", update = FALSE)
-}
-library(org.Hs.eg.db)
-
-# Attach library for pipe (%>%)
-library(magrittr)
-
-# Read in data and metadata TSV file and make Gene column into row names
-metadata <- readr::read_tsv(metadata_file)
-expression_df <- readr::read_tsv(data_file) %>%
-  tibble::column_to_rownames("Gene")
-```
-
-```{r}
-# Make the data in the order of the metadata
-expression_df <- expression_df %>%
-  dplyr::select(metadata$refinebio_accession_code)
-
-# Check if this is in the same order
-all.equal(colnames(expression_df), metadata$refinebio_accession_code)
-
-# Bring back the "Gene" column in preparation for mapping
-expression_df <- expression_df %>%
-  tibble::rownames_to_column("Gene")
-
-# Map Ensembl IDs to their associated Entrez IDs
-mapped_list <- mapIds(
-  org.Hs.eg.db, # Replace with annotation package for your organism
-  keys = expression_df$Gene,
-  keytype = "ENSEMBL", # Replace with the type of gene identifiers in your data
-  column = "ENTREZID", # The type of gene identifiers you would like to map to
-  multiVals = "list"
-)
-
-head(mapped_list) #Amazing.
-```
-
-```{r include=FALSE}
-# Let's make our list a bit more manageable by turning it into a data frame
-mapped_df <- mapped_list %>%
-  tibble::enframe(name = "Ensembl", value = "Entrez") %>%
-  # enframe() makes a `list` column; we will simplify it with unnest()
-  # This will result in one row of our data frame per list item
-  tidyr::unnest(cols = Entrez)
-```
-
 What size is your expression matrix?
 
 ```{r}
@@ -239,27 +208,6 @@ dim(expression_df)
 ```
 
 How many genes does it include?
-
-[43363 ensembl IDs OR 44380 Entrez IDs. 13996 Ensembl's had no ENTREZ
-IDs, but some mapped to many...]{.underline}
-
-```{r}
-summary(as.factor(mapped_df$Entrez), maxsum = 5)
-```
-
-```{r}
-multi_mapped <- mapped_df %>%
-  # Let's count the number of times each Ensembl ID appears in `Ensembl` column
-  dplyr::count(Ensembl, name = "entrez_id_count") %>%
-  # Arrange by the genes with the highest number of Entrez IDs mapped
-  dplyr::arrange(desc(entrez_id_count))
-
-# Let's look at the first 6 rows of our `multi_mapped` object
-head(multi_mapped)
-```
-
-[Looks like some ensemblIDs mapped to as many as 210 Entrez
-IDs...]{.underline}
 
 How much variation do you see in the data? To answer these questions,
 log-scale the data, calculate per-gene median expression ranges, then
