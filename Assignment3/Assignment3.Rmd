@@ -52,7 +52,7 @@ Entrez IDs as this was unnecessary for downstream
 processing.]{.underline}
 
 ```{r}
-# Mount requisite libraries
+# Mount requisite libraries, install clustering lib
 library(dplyr)
 library(tidyverse)
 library(readr)
@@ -116,9 +116,9 @@ expression_df <- readr::read_tsv(data_file) %>%
         your assignment writeup).
     d.  How many clusters did each method find?
         a.  If you ran a method that requires you to select the number
-            of clusters (k), how did changing\
-            this value change the results? Compare cluster membership at
-            each k to investigate this.
+            of clusters (k), how did changing this value change the
+            results? Compare cluster membership at each k to investigate
+            this.
         b.  If you ran a method that selects k for you, describe why it
             chose that k.
     e.  Rerun each clustering method using different numbers of genes.
@@ -133,7 +133,8 @@ expression_df <- readr::read_tsv(data_file) %>%
 
 ```{r}
 # Calculate row variance
-row_variances <- apply(expression_df, 1, var)
+# 🚨 ConsensusClusterPlus suggests using MAD - median absolute deviation.
+row_variances <- apply(expression_df, 1, mad)
 expression_df$row_variance <- row_variances
 
 # Sort by row variance
@@ -150,20 +151,79 @@ top_5000 <- head(expression_df, 5000)
 top_10000 <- head(expression_df, 10000)
 ```
 
-# Michael - ConsensusClusterPlus
+# Michael - PAM Clustering
 
 ```{r}
-if (!require("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
+library(cluster)
 
-BiocManager::install("ConsensusClusterPlus")
+#Center data around median gene expressions in each row, without touching OG data. This came from the ConsensusClusterPlus guide, though "Scale" which the internet recommended for use with PAM would accomplish the same thing just with means instead of medians.
+top_10m = sweep(top_10,1, apply(top_10,1,median,na.rm=T))
+top_100m = sweep(top_100,1, apply(top_100,1,median,na.rm=T))
+top_1000m = sweep(top_1000,1, apply(top_1000,1,median,na.rm=T))
+top_5000m = sweep(top_5000,1, apply(top_5000,1,median,na.rm=T))
+top_10000m = sweep(top_10000,1, apply(top_10000,1,median,na.rm=T))
+
+k <- 3
+pam_result_top10 <- pam(top_10m, k = k, diss = TRUE)
+pam_result_top100 <- pam(top_100m, k = k, diss = TRUE)
+pam_result_top1000 <- pam(top_1000m, k = k, diss = TRUE)
+pam_result_top5000 <- pam(top_5000m, k = k, diss = TRUE)
+pam_result_top10000 <- pam(top_10000m, k = k, diss = TRUE)
+```
+
+```{r}
+#Let's compare K values:
+k <- 3
+pam_result_top5000 <- pam(top_5000m, k = k, diss = TRUE)
+cluster_counts <- table(pam_result_top5000$clustering)
+cluster_counts
+
+k <- 4
+pam_result_top5000 <- pam(top_5000m, k = k, diss = TRUE)
+cluster_counts <- table(pam_result_top5000$clustering)
+cluster_counts
+
+k <- 5
+pam_result_top5000 <- pam(top_5000m, k = k, diss = TRUE)
+cluster_counts <- table(pam_result_top5000$clustering)
+cluster_counts
+
+k <- 6
+pam_result_top5000 <- pam(top_5000m, k = k, diss = TRUE)
+cluster_counts <- table(pam_result_top5000$clustering)
+cluster_counts
+```
+
+[I spent over an hour attempting to generate a nice sankey diagram of
+the transitions of genes between clusters but was unable to do so and
+have concluded that even if I did, the information would not be
+overwhelmingly insightful. Point is, we can see that increasing the
+cluster count discriminates our top 5000 genes into additional groups.
+To evaluate "goodness of clustering" we can use the silhouette method,
+which is comparable to agglomerative clustering in how it measures
+goodness as a function of not only proximity of points within clusters
+but of the distance between clusters. By graphing the sillhouette score
+for different K values, we can identify an optimal K. I learned of
+silhouette in the PAM instructions and while investigating goodness of
+clustering methods for PAM.]{.underline}
+
+```{r}
+#Takes around 4 minutes on a macbook air M2
+library(factoextra)
+fviz_nbclust(top_5000m, pam, k.max = 6, verbose = TRUE, print.summary = TRUE, method = "silhouette")
+```
+
+```{r}
+pam_result_top5000 <- pam(top_5000m, k = 2, diss = TRUE)
+fviz_silhouette(pam_result_top5000, label=TRUE)
 ```
 
 3.  Heatmaps and Dendrograms
+
     1.  Create a heatmap of the 5,000 genes used in clustering, with an
         annotation sidebar showing one set of clusters you identified
         from each clustering method and the sample groups from
-        Assignment 1.
+        Assignment
         1.  You should have n+1 annotation columns, 1 per clustering
             method and 1 for the sample groups\
             in Assignment 1.
@@ -171,7 +231,9 @@ BiocManager::install("ConsensusClusterPlus")
             all in the same heatmap.
         3.  Include a legend and axis labels
         4.  Include row and column dendrograms
+
 4.  Statistics
+
     1.  Does cluster membership correlate with the groups you chose in
         Assignment 1? Perform a chi-squared test of independence to
         statistically compare the two. Do this for each clustering
@@ -181,12 +243,19 @@ BiocManager::install("ConsensusClusterPlus")
         testing (p.adjust).
     3.  Create a table with statistical test results that includes
         adjusted and un-adjusted p-values.
+
 5.  Write a short summary for each plot/table you created in this
     assignment. In 3-5 sentences for each, describe what you did, what
     parameters you used (if any) and an interesting result from it.
+
 6.  As a team, fill out the team evaluation table below.
+
+    ✅
+
 7.  Combine all results into a single file, submit on Canvas. Make sure
     that all your code is added to your GitHub repository.
+
+    ✅
 
 ### 🚨🚨🚨🚨🚨🚨🚨🚨🚨Everything Below this Point is Assignment 2 🚨🚨🚨🚨🚨🚨🚨🚨🚨
 
@@ -200,14 +269,6 @@ from google drive,
 instructions, but does not attempt to transform our Gene column to the
 Entrez IDs as this was unnecessary for downstream
 processing.]{.underline}
-
-What size is your expression matrix?
-
-```{r}
-dim(expression_df)
-```
-
-How many genes does it include?
 
 How much variation do you see in the data? To answer these questions,
 log-scale the data, calculate per-gene median expression ranges, then
