@@ -131,7 +131,7 @@ expression_df <- readr::read_tsv(data_file) %>%
 
 # Subsetting to Most Variable Genes
 
-```{r}
+```{r include=FALSE}
 # Calculate row variance
 row_variances <- apply(expression_df, 1, var)
 expression_df$row_variance <- row_variances
@@ -150,9 +150,61 @@ top_5000 <- head(expression_df, 5000)
 top_10000 <- head(expression_df, 10000)
 ```
 
+
+# Rayyan - K-means 
+#2B
+```{r INCLUDE=FALSE}
+# compute K-means clustering for top 5000 genes at k = 1,2,5,10
+# 
+
+kmeans(top_5000,1,iter.max = 10,nstart=1)
+
+kmeans(top_5000,2,iter.max = 10,nstart=1)
+
+kmeans(top_5000,5,iter.max = 10,nstart=1)
+
+kmeans(top_5000,10,iter.max = 10,nstart=1)
+
+```
+
+#2D K-MEANS - i.	If you ran a method that requires you to select the number of clusters (k), how did changing this value change the results? Compare cluster membership at each k to investigate this.
+
+The K-means clustering method required me to select the number of clusters. To determine the impact changing k has on the results, I ran the method for four different values (1,2,5, and 10) and obtained the following cluster membership values: 
+
+From this data, we can see that increasing the number of clusters also increases cluster membership, indicating that our data is quite spread out rather than concentrated.
+
+#3E 
+```{r include=FALSE}
+# rerun K-Means clustering method with different number of genes
+k_ten <- kmeans(top_10,5,iter.max = 10,nstart=1)
+k_hundred <- kmeans(top_100,5,iter.max = 10,nstart=1)
+k_k <- kmeans(top_1000,5,iter.max = 10,nstart=1)
+k_tenk <- kmeans(top_10000,5,iter.max = 10,nstart=1)
+
+``` 
+#3E.A - How did the number of genes affect clustering?
+As the number of genes increased, 
+
+#3E.B - Alluvial Diagram of K-Means CLustering
+```{r}
+if(!require("ggplot2"))
+  install.packages("ggplot2")
+if(!require("ggalluvial"))
+  install.packages("ggalluvial")
+
+
+# data cannot be a list like what kmeans outputs?
+is_alluvia_form(top_5000)
+
+
+
+
+```
+
+
 # Michael - ConsensusClusterPlus
 
-```{r}
+```{r INCLUDE = FALSE}
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
@@ -171,6 +223,19 @@ BiocManager::install("ConsensusClusterPlus")
             all in the same heatmap.
         3.  Include a legend and axis labels
         4.  Include row and column dendrograms
+        
+#3 K-Means Heatmap
+```{r}
+
+x = data.matrix(top_5000, rownames.force = NA)
+ht = ComplexHeatmap::Heatmap(x,heatmap_legend_param = list(
+        title = "5,000 Genes used for K-Means Clustering"
+    ),column_title = "Clusters",show_row_names = FALSE, show_column_names = FALSE,cluster_columns = FALSE,cluster_rows = TRUE)
+ComplexHeatmap::draw(ht)
+
+```
+
+
 4.  Statistics
     1.  Does cluster membership correlate with the groups you chose in
         Assignment 1? Perform a chi-squared test of independence to
