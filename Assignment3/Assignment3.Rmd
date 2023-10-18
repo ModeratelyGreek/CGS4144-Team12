@@ -154,6 +154,9 @@ top_10000 <- head(expression_df, 10000)
 
 # Sahas - Hierarchical Clustering (hclust)
 
+[Note, \~7 minute runtime on Macbook Air M2 (known for CPU), expect
+delay.]{.underline}
+
 ```{r}
 #5000 most variable genes Hierarchical Clustering
 distance <- dist(top_5000, method = "euclidean")
@@ -254,10 +257,14 @@ for different K values, we can identify an optimal K. I learned of
 silhouette in the PAM instructions and while investigating goodness of
 clustering methods for PAM.]{.underline}
 
+🚨[Note, takes \~4 minutes on macbook air M2.]{.underline}
+
 ```{r}
 #Takes around 4 minutes on a macbook air M2
 library(factoextra)
 fviz_nbclust(top_5000m, pam, k.max = 6, verbose = TRUE, print.summary = TRUE, method = "silhouette")
+
+#should identify 2 as optimal K value
 ```
 
 ```{r}
@@ -304,7 +311,7 @@ fviz_silhouette(pam_result_top5000, label=TRUE)
 
     ✅
 
-### 🚨🚨🚨🚨🚨🚨🚨🚨🚨Everything Below this Point is Assignment 2 🚨🚨🚨🚨🚨🚨🚨🚨🚨
+### 🚨🚨🚨🚨🚨🚨🚨🚨🚨Everything Below this Point is Assignment 2 (For reference) 🚨🚨🚨🚨🚨🚨🚨🚨🚨
 
 [Please insert your data files in the data directory such that the
 single folder from refine.bio containing the metadata TSV and main TSV
