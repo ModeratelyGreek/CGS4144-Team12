@@ -339,9 +339,14 @@ BiocManager::install("ConsensusClusterPlus")
 #i am confused
 ```{r}
 
-ht = ComplexHeatmap::Heatmap(copy_1000,heatmap_legend_param = list(
+```
+
+
+```{r}
+mat_100<- data.matrix(copy_100,rownames.force = FALSE)
+ht = ComplexHeatmap::Heatmap(mat_100,heatmap_legend_param = list(
         title = "Expression", at = c(0, 50, 100,150)
-    ),column_title = "Clustered Genes",show_column_names = FALSE,cluster_columns = FALSE,cluster_rows = FALSE)
+    ),column_title = "Clustered Genes",show_column_names = FALSE,cluster_columns = TRUE,cluster_rows = TRUE)
 ComplexHeatmap::draw(ht)
 
 ```
