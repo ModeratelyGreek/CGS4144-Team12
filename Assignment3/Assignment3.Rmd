@@ -14,42 +14,41 @@ editor_options:
 
 # Instructions:
 
-[Below we've transcribed the assignment instructions with corresponding
-code blocks beneath each.]{.underline}
+Below we've transcribed the assignment instructions with corresponding
+code blocks beneath each.
 
 [🚨**Please note,**]{.underline}
 
--   [Underlines denote our writing (not transcribed
-    instructions)]{.underline}
+-   With the exception of headers and the above, writing in the normal
+    font is ours, and [**bold/underlined writing is copy-pasted from the
+    instructions.**]{.underline}
 
--   [Code blocks were directly excerpted, adapted, and reused from
+-   Code blocks were directly excerpted, adapted, and reused from
     previously provided instructions / guidance. We do not believe this
     to be plagiarism and hope that in declaring it up front we
     demonstrate our honest intent. The sources used are found in the
     Assignment 2 instructions (which are transcribed fully in the
-    Assignment 2 folder in our repo).]{.underline}
+    Assignment 2 folder in our repo).
 
--   [Task 5: Annotating tables, has been performed inline, in a more
+-   Task 5: Annotating tables, has been performed inline, in a more
     traditional notebook manner. We do not reserve the annotations for
     step 5 and instead hope to meet the criteria by elaborating on all
-    provided images and tables adjacently to each.]{.underline}
+    provided images and tables adjacently to each.
 
--   ⭐️ [Stars denote items corresponding directly to the
-    rubric]{.underline}
+-   ⭐️ Stars denote items corresponding directly to the rubric
 
-1.  Load into R the expression data and matching metadata that you
-    processed in Assignment 2.
+1.  [**Load into R the expression data and matching metadata that you
+    processed in Assignment 2.**]{.underline}
 
-[Please insert your data files in the data directory such that the
-single folder from refine.bio containing the metadata TSV and main TSV
-file are present in the immediate subdirectory. This can be downloaded
-from google drive,
-[here!](https://drive.google.com/file/d/1aOnupOgIn-b7rSoGdRflNBvpfQPcR5v5/view?usp=sharing "Download folder to be unzipped as subdirectory of Data!")]{.underline}
+Please insert your data files in the data directory such that the single
+folder from refine.bio containing the metadata TSV and main TSV file are
+present in the immediate subdirectory. This can be downloaded from
+google drive,
+[here!](https://drive.google.com/file/d/1aOnupOgIn-b7rSoGdRflNBvpfQPcR5v5/view?usp=sharing "Download folder to be unzipped as subdirectory of Data!")
 
-[This next step loads data and annotation libraries per the
-instructions, but does not attempt to transform our Gene column to the
-Entrez IDs as this was unnecessary for downstream
-processing.]{.underline}
+This next step loads data and annotation libraries per the instructions,
+but does not attempt to transform our Gene column to the Entrez IDs as
+this was unnecessary for downstream processing.
 
 ```{r}
 # Mount requisite libraries, install clustering lib
@@ -102,35 +101,37 @@ expression_df <- readr::read_tsv(data_file) %>%
   tibble::column_to_rownames("Gene")
 ```
 
-1.  Unsupervised Analysis
-    a.  Subset your data to the 5,000 most variable genes
-    b.  Using that subset of the data, select and run a clustering
-        algorithm from this list:
-        1.  K-means
-        2.  Hierarchical clustering (hclust)
-        3.  ConsensusClusterPlus
-        4.  PAM Clustering
-        5.  Gaussian Mixture Models
-    c.  Each student in your team should run a different clustering
+1.  [**Unsupervised Analysis**]{.underline}
+    a.  [**Subset your data to the 5,000 most variable
+        genes**]{.underline}
+    b.  [**Using that subset of the data, select and run a clustering
+        algorithm from this list:**]{.underline}
+        1.  [**K-means**]{.underline}
+        2.  [**Hierarchical clustering (hclust)**]{.underline}
+        3.  [**ConsensusClusterPlus**]{.underline}
+        4.  [**PAM Clustering**]{.underline}
+        5.  [**Gaussian Mixture Models**]{.underline}
+    c.  [**Each student in your team should run a different clustering
         method (e.g., if there are 4 students\
         on the team, there should be results for 4 clustering methods in
-        your assignment writeup).
-    d.  How many clusters did each method find?
-        a.  If you ran a method that requires you to select the number
-            of clusters (k), how did changing this value change the
-            results? Compare cluster membership at each k to investigate
-            this.
-        b.  If you ran a method that selects k for you, describe why it
-            chose that k.
-    e.  Rerun each clustering method using different numbers of genes.
-        Try 10, 100, 1000, and 10000 genes.
-        a.  How did the number of genes affect clustering?
-        b.  Create an alluvial diagram (Sankey plot) to visualize how
+        your assignment writeup).**]{.underline}
+    d.  [**How many clusters did each method find?**]{.underline}
+        a.  [**If you ran a method that requires you to select the
+            number of clusters (k), how did changing this value change
+            the results? Compare cluster membership at each k to
+            investigate this.**]{.underline}
+        b.  [**If you ran a method that selects k for you, describe why
+            it chose that k.**]{.underline}
+    e.  [**Rerun each clustering method using different numbers of
+        genes. Try 10, 100, 1000, and 10000 genes.**]{.underline}
+        a.  [**How did the number of genes affect
+            clustering?**]{.underline}
+        b.  [**Create an alluvial diagram (Sankey plot) to visualize how
             the different clustering setups\
             changed cluster memberships for each sample.
-            ([https://cran.r](https://cran.r-)project.org/web/packages/ggalluvial/vignettes/ggalluvial.html)
+            ([https://cran.r](https://cran.r-)project.org/web/packages/ggalluvial/vignettes/ggalluvial.html)**]{.underline}
 
-# Subsetting to Most Variable Genes
+# 1A: Subsetting to Most Variable Genes
 
 ```{r include=FALSE}
 # Calculate row variance
@@ -152,8 +153,9 @@ top_5000 <- head(expression_df, 5000)
 top_10000 <- head(expression_df, 10000)
 ```
 
-# 1B
-# Rayyan - K-means 
+# 1B:
+
+## Rayyan - K-means
 
 ```{r INCLUDE=FALSE}
 # compute ideal K for K-means clustering using the "elbow method" 
@@ -164,37 +166,167 @@ if(!require("purrr"))
 if(!require('factoextra'))
   install.packages('factoextra')
 
-#set.seed(123)
-#below line takes wayyy too long, i took a picture so maybe we can insert that and say we took it out in interest of time
-#fviz_nbclust(top_5000, kmeans, method = "wss")
+set.seed(123)
+#Expect a delay, takes a bit
+fviz_nbclust(top_5000, kmeans, k.max = 6, method = "wss")
 
-# using the elbow method, the optimal number of clusters appears to be 4
+# using the elbow method, the optimal number of clusters appears to be 4 (since this is around where the curve begins to flatten out)
 ```
 
 ```{r}
-k_three <- kmeans(top_5000,3,iter.max = 10, nstart = 25)
-k_four <- kmeans(top_5000,4,iter.max = 10, nstart = 25)
-k_five <- kmeans(top_5000,5,iter.max = 10, nstart = 25)
-print(k_three)
-print(k_four)
-print(k_five)
+#about 20 seconds
+kmeans_result_5000_three <- kmeans(top_5000,3,iter.max = 10, nstart = 25)
+kmeans_result_5000_four <- kmeans(top_5000,4,iter.max = 10, nstart = 25)
+kmeans_result_5000_five <- kmeans(top_5000,5,iter.max = 10, nstart = 25)
 ```
 
 ```{r}
-# The below command is supposed to show the data in a cool graph with groupings, but I can't get it to work because R says some file doesn't exist?
-#fviz_cluster(k_four, data = top_5000)
+fviz_cluster(kmeans_result_5000_five, data = top_5000)
 ```
 
-# 2D K-MEANS - i.	If you ran a method that requires you to select the number of clusters (k), how did changing this value change the results? Compare cluster membership at each k to investigate this.
+[**If you ran a method that requires you to select the number of
+clusters (k), how did changing this value change the results? Compare
+cluster membership at each k to investigate this.**]{.underline}
 
-The K-means clustering method required me to select the number of clusters. To determine the ideal "k", I utilized the "factoextra" package to generate a graph showing the number of clusters versus the total within the sum of square. Using the elbow method, I determined that the optimal number of cluster was 4, and to test how changing the value changed the results, ran the "kmeans" clustering command for a k of 3,4, and 5 to determine how changing k changed the results.
+The K-means clustering method required me to select the number of
+clusters. To determine the ideal "k", I utilized the "factoextra"
+package to generate a graph showing the number of clusters versus the
+total within the sum of square. Using the elbow method, I determined
+that the optimal number of cluster was 4, and to test how changing the
+value changed the results, ran the "kmeans" clustering command for a k
+of 3,4, and 5 to determine how changing k changed the results.
 
 Cluster membership at 3,4, and 5 was:
-3 - 4358, 594, 48, 
+
+3 - 4358, 594, 48,
+
 4 - 3878, 954, 147, 21
+
 5 - 3806, 1003, 161, 20, 10
 
-By assigning k of 3 as opposed to 5000, it achieved of a reduction in sum of squares by 32.3%. At a k of 4, this rose greatly to 37.3% At a k of 5, it rose only slightly to 39.9%. By looking at cluster membership at k = 3,4,5, we can see that cluster membership does not change drastically between 4 and 5. Between those 2 points, the top 3 largest groups have largely the same numbers. Meanwhile, between a k of 3 and 4, the top 3 largest groups have drastically different numbers. These data together confirms the earlier elbow method, telling us that 4 is the most ideal number of clusters.
+By assigning k of 3 as opposed to 5000, it achieved of a reduction in
+sum of squares by 32.3%. At a k of 4, this rose greatly to 37.3% At a k
+of 5, it rose only slightly to 39.9%. By looking at cluster membership
+at k = 3,4,5, we can see that cluster membership does not change
+drastically between 4 and 5. Between those 2 points, the top 3 largest
+groups have largely the same numbers. Meanwhile, between a k of 3 and 4,
+the top 3 largest groups have drastically different numbers. These data
+together confirms the earlier elbow method, telling us that 4 is the
+most ideal number of clusters.
+
+```{r}
+# rerun K-Means clustering method with different number of genes AND K values for the alluvial down the line
+kmeans_result_10_three <- kmeans(top_10,3,iter.max = 10,nstart=25)
+kmeans_result_10_four <- kmeans(top_10,4,iter.max = 10,nstart=25)
+kmeans_result_10_five <- kmeans(top_10,5,iter.max = 10,nstart=25)
+kmeans_result_100_three <- kmeans(top_100,3,iter.max = 10,nstart=25)
+kmeans_result_100_four <- kmeans(top_100,4,iter.max = 10,nstart=25)
+kmeans_result_100_five <- kmeans(top_100,5,iter.max = 10,nstart=25)
+kmeans_result_1000_three <- kmeans(top_1000,3,iter.max = 10,nstart=25)
+kmeans_result_1000_four <- kmeans(top_1000,4,iter.max = 10,nstart=25)
+kmeans_result_1000_five <- kmeans(top_1000,5,iter.max = 10,nstart=25)
+kmeans_result_10000_three <- kmeans(top_10000,3,iter.max = 10,nstart=25)
+kmeans_result_10000_four <- kmeans(top_10000,4,iter.max = 10,nstart=25)
+kmeans_result_10000_five <- kmeans(top_10000,5,iter.max = 10,nstart=25)
+
+```
+
+[**How did the number of genes affect clustering?**]{.underline}
+
+Cluster Membership at 10, 100, 1000, and 10,000 (with a k of 4) was:
+
+10 - 6, 2, 1, 1
+
+100 - 80, 16, 2, 2
+
+1000 - 810, 162, 18, 10
+
+10,000 - 8296, 1517, 166, 21
+
+Looking solely at cluster membership, it appears that each time the
+number of genes increased by 10 times, membership in the 1,2nd, and 3rd
+largest groups roughly followed the magnification as well. As the number
+of genes increased, a reduction in sum of squares at a k of 4 was
+calculated as 70.5%, 36.8%, 35.5,% and 39.1%.
+
+```{r}
+if(!require("ggplot2"))
+  install.packages("ggplot2")
+if(!require("ggalluvial"))
+  install.packages("ggalluvial")
+
+alluvialData <- data.frame(
+  K3 = kmeans_result_10_three$cluster, 
+  K4 = kmeans_result_10_four$cluster, 
+  K5 = kmeans_result_10_five$cluster
+)
+ggplot(data = alluvialData, aes(axis1 = K3, axis2 = K4, axis3 = K5)) +
+  geom_alluvium(aes(fill = K3)) +
+  geom_stratum() +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+  theme_minimal() +
+  labs(title = "KMeans for 10 Genes at K=3,4,5")
+```
+
+```{r}
+if(!require("ggplot2"))
+  install.packages("ggplot2")
+if(!require("ggalluvial"))
+  install.packages("ggalluvial")
+
+alluvialData <- data.frame(
+  K3 = kmeans_result_100_three$cluster, 
+  K4 = kmeans_result_100_four$cluster, 
+  K5 = kmeans_result_100_five$cluster
+)
+ggplot(data = alluvialData, aes(axis1 = K3, axis2 = K4, axis3 = K5)) +
+  geom_alluvium(aes(fill = K3)) +
+  geom_stratum() +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+  theme_minimal() +
+  labs(title = "KMeans for 100 Genes at K=3,4,5")
+
+```
+
+```{r}
+if(!require("ggplot2"))
+  install.packages("ggplot2")
+if(!require("ggalluvial"))
+  install.packages("ggalluvial")
+
+alluvialData <- data.frame(
+  K3 = kmeans_result_1000_three$cluster, 
+  K4 = kmeans_result_1000_four$cluster, 
+  K5 = kmeans_result_1000_five$cluster
+)
+ggplot(data = alluvialData, aes(axis1 = K3, axis2 = K4, axis3 = K5)) +
+  geom_alluvium(aes(fill = K3)) +
+  geom_stratum() +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+  theme_minimal() +
+  labs(title = "KMeans for 1000 Genes at K=3,4,5")
+
+```
+
+```{r}
+if(!require("ggplot2"))
+  install.packages("ggplot2")
+if(!require("ggalluvial"))
+  install.packages("ggalluvial")
+
+alluvialData <- data.frame(
+  K3 = kmeans_result_10000_three$cluster, 
+  K4 = kmeans_result_10000_four$cluster, 
+  K5 = kmeans_result_10000_five$cluster
+)
+ggplot(data = alluvialData, aes(axis1 = K3, axis2 = K4, axis3 = K5)) +
+  geom_alluvium(aes(fill = K3)) +
+  geom_stratum() +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+  theme_minimal() +
+  labs(title = "KMeans for 10,000 Genes at K=3,4,5")
+
+```
 
 # Sahas - Hierarchical Clustering (hclust)
 
@@ -206,38 +338,38 @@ delay.]{.underline}
 distance <- dist(top_5000, method = "euclidean")
 hcluster  <- hclust(distance, method = "complete")
 # 1 cluster
-hcluster1 <- cutree(hcluster, k = 1)
+hcluster_result_5000_one <- cutree(hcluster, k = 1)
 # 2 clusters
-hcluster2 <- cutree(hcluster, k = 2)
+hcluster_result_5000_two <- cutree(hcluster, k = 2)
 # 3 clusters 
-hcluster3 <- cutree(hcluster, k = 3)
+hcluster_result_5000_three <- cutree(hcluster, k = 3)
 
 # Visualize dendrogram
 h <- plot(hcluster, cex = 0.8, hang = -1)
 #rect.hclust(hcluster, k = 2, border = 2:5)
 
 # Visualize clusters
-fviz_cluster(list(data = top_5000, cluster = hcluster2), geom = ("point"))
+fviz_cluster(list(data = top_5000, cluster = hcluster_result_5000_two), geom = ("point"))
 
-#10 most variable genes Hierarchical Clustering
+# 10 most variable genes Hierarchical Clustering
 distance <- dist(top_10, method = "euclidean")
 hclusterTop10  <- hclust(distance, method = "complete")
 plot(hclusterTop10, cex = 0.8, hang = -1)
 hclusterCut10 <- cutree(hclusterTop10, k = 2)
 
-#100 most variable genes Hierarchical Clustering
+# 100 most variable genes Hierarchical Clustering
 distance <- dist(top_100, method = "euclidean")
 hclusterTop100  <- hclust(distance, method = "complete")
 plot(hclusterTop100, cex = 0.8, hang = -1)
 hclusterCut100 <- cutree(hclusterTop100, k = 2)
 
-#1000 most variable genes Hierarchical Clustering
+# 1000 most variable genes Hierarchical Clustering
 distance <- dist(top_1000, method = "euclidean")
 hclusterTop1000  <- hclust(distance, method = "complete")
 plot(hclusterTop1000, cex = 0.8, hang = -1)
 hclusterCut1000 <- cutree(hclusterTop1000, k = 2)
 
-#10000 most variable genes Hierarchical Clustering
+# 10000 most variable genes Hierarchical Clustering
 distance <- dist(top_10000, method = "euclidean")
 hclusterTop10000  <- hclust(distance, method = "complete")
 plot(hclusterTop10000, cex = 0.8, hang = -1)
@@ -315,57 +447,31 @@ fviz_nbclust(top_5000m, pam, k.max = 6, verbose = TRUE, print.summary = TRUE, me
 pam_result_top5000 <- pam(top_5000m, k = 2, diss = TRUE)
 fviz_silhouette(pam_result_top5000, label=TRUE)
 ```
-#3E 
+
 ```{r}
-# rerun K-Means clustering method with different number of genes
-k_ten <- kmeans(top_10,4,iter.max = 10,nstart=25)
-print(k_ten)
-k_hundred <- kmeans(top_100,4,iter.max = 10,nstart=25)
-print(k_hundred)
-k_k <- kmeans(top_1000,4,iter.max = 10,nstart=25)
-print(k_k)
-k_tenk <- kmeans(top_10000,4,iter.max = 10,nstart=25)
-print(k_tenk)
-
-``` 
-#3E.A - How did the number of genes affect clustering?
-Cluster Membership at 10, 100, 1000, and 10,000 (with a k of 4) was:
-10 - 6, 2, 1, 1
-100 - 80, 16, 2, 2
-1000 - 810, 162, 18, 10
-10,000 - 8296, 1517, 166, 21
-
-Looking solely at cluster membership, it appears that each time the number of genes increased by 10 times, membership in the 1,2nd, and 3rd largest groups roughly followed the magnification as well.
-As the number of genes increased, a reduction in sum of squares at a k of 4 was calculated as 70.5%, 36.8%, 35.5,% and 39.1%. 
-
-
-#3E.B - Alluvial Diagram of K-Means CLustering
-```{r}
-if(!require("ggplot2"))
-  install.packages("ggplot2")
-if(!require("ggalluvial"))
-  install.packages("ggalluvial")
-
-#an alluvial diagram needs to be created for EACH of the clustering methods for 10, 100, 1000, and 10000 genes
-copy_ten <- top_10
-copy_ten$cluster <- k_ten$cluster
-#copy_ten
 is_alluvia_form(copy_ten)
-copy_ten <- copy_ten %>%
-  tibble::rownames_to_column("Gene")
+ggplot(
+  data = copy_ten,
+  aes(
+    axis1 = Gene,
+    axis2 = cluster, 
+    y = row_variance
+  )
+)
 
-ggplot(data = copy_ten,
-       aes(axis1 = Gene, axis2 = cluster, 
-           y = row_variance)) +
-  scale_x_discrete(limits = c("Gene", "Cluster", "row_variance"), expand = c(.2, .05)) +
-  xlab("Gene Clusters") +
-  geom_alluvium(aes(fill = cluster)) +
-  geom_stratum() +
-  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
-  theme_minimal() +
-  ggtitle("10 Genes with 4 Clusters (K-means)")
-
+scale_x_discrete(
+  limits = c("Gene", "Cluster", "row_variance"), 
+  expand = c(.2, .05)
+) 
+  
+xlab("Gene Clusters")
+geom_alluvium(aes(fill = cluster))
+geom_stratum()
+geom_text(stat = "stratum", aes(label = after_stat(stratum)))
+theme_minimal()
+ggtitle("10 Genes with 4 Clusters (K-means)")
 ```
+
 ```{r}
 
 #an alluvial diagram needs to be created for EACH of the clustering methods for 10, 100, 1000, and 10000 genes
@@ -389,6 +495,7 @@ ggplot(data = copy_100,
 
   
 ```
+
 ```{r}
 #an alluvial diagram needs to be created for EACH of the clustering methods for 10, 100, 1000, and 10000 genes
 copy_1000 <- top_1000
@@ -409,6 +516,7 @@ ggplot(data = copy_1000,
   theme_minimal() +
   ggtitle("1,000 Genes with 4 Clusters (K-means)")
 ```
+
 ```{r}
 #an alluvial diagram needs to be created for EACH of the clustering methods for 10, 100, 1000, and 10000 genes
 copy_10000 <- top_10000
@@ -443,15 +551,14 @@ ggplot(data = copy_10000,
             all in the same heatmap.
         3.  Include a legend and axis labels
         4.  Include row and column dendrograms
-        
+
 #3 K-Means Heatmap
 
-#for this, we need to also have the sample groupings (diabetic, non-diabetic AND pancreatic islets because we have to have all 5,000 genes)
+#for this, we need to also have the sample groupings (diabetic,
+non-diabetic AND pancreatic islets because we have to have all 5,000
+genes)
+
 #i am confused
-```{r}
-
-```
-
 
 ```{r}
 mat_100<- data.matrix(copy_100,rownames.force = FALSE)
@@ -461,8 +568,6 @@ ht = ComplexHeatmap::Heatmap(mat_100,heatmap_legend_param = list(
 ComplexHeatmap::draw(ht)
 
 ```
-
-
 
 4.  Statistics
 
