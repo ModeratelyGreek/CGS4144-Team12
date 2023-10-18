@@ -56,6 +56,7 @@ processing.]{.underline}
 library(dplyr)
 library(tidyverse)
 library(readr)
+library(factoextra)
 
 # Create the data folder if it doesn't exist
 if (!dir.exists("data")) {
@@ -150,6 +151,100 @@ top_1000 <- head(expression_df, 1000)
 top_5000 <- head(expression_df, 5000)
 top_10000 <- head(expression_df, 10000)
 ```
+
+# Sahas - Hierarchical Clustering (hclust)
+
+```{r}
+#5000 most variable genes Hierarchical Clustering
+distance <- dist(top_5000, method = "euclidean")
+hcluster  <- hclust(distance, method = "complete")
+# 1 cluster
+hcluster1 <- cutree(hcluster, k = 1)
+# 2 clusters
+hcluster2 <- cutree(hcluster, k = 2)
+# 3 clusters 
+hcluster3 <- cutree(hcluster, k = 3)
+
+# Visualize dendrogram
+h <- plot(hcluster, cex = 0.8, hang = -1)
+#rect.hclust(hcluster, k = 2, border = 2:5)
+
+# Visualize clusters
+fviz_cluster(list(data = top_5000, cluster = hcluster2), geom = ("point"))
+
+#10 most variable genes Hierarchical Clustering
+distance <- dist(top_10, method = "euclidean")
+hclusterTop10  <- hclust(distance, method = "complete")
+plot(hclusterTop10, cex = 0.8, hang = -1)
+hclusterCut10 <- cutree(hclusterTop10, k = 2)
+
+#100 most variable genes Hierarchical Clustering
+distance <- dist(top_100, method = "euclidean")
+hclusterTop100  <- hclust(distance, method = "complete")
+plot(hclusterTop100, cex = 0.8, hang = -1)
+hclusterCut100 <- cutree(hclusterTop100, k = 2)
+
+#1000 most variable genes Hierarchical Clustering
+distance <- dist(top_1000, method = "euclidean")
+hclusterTop1000  <- hclust(distance, method = "complete")
+plot(hclusterTop1000, cex = 0.8, hang = -1)
+hclusterCut1000 <- cutree(hclusterTop1000, k = 2)
+
+#10000 most variable genes Hierarchical Clustering
+distance <- dist(top_10000, method = "euclidean")
+hclusterTop10000  <- hclust(distance, method = "complete")
+plot(hclusterTop10000, cex = 0.8, hang = -1)
+hclusterCut10000 <- cutree(hclusterTop10000, k = 2)
+
+```
+
+
+# Sahas - Hierarchical Clustering (hclust)
+
+```{r}
+#5000 most variable genes Hierarchical Clustering
+distance <- dist(top_5000, method = "euclidean")
+hcluster  <- hclust(distance, method = "complete")
+# 1 cluster
+hcluster1 <- cutree(hcluster, k = 1)
+# 2 clusters
+hcluster2 <- cutree(hcluster, k = 2)
+# 3 clusters 
+hcluster3 <- cutree(hcluster, k = 3)
+
+# Visualize dendrogram
+h <- plot(hcluster, cex = 0.8, hang = -1)
+#rect.hclust(hcluster, k = 2, border = 2:5)
+
+# Visualize clusters
+fviz_cluster(list(data = top_5000, cluster = hcluster2), geom = ("point"))
+
+#10 most variable genes Hierarchical Clustering
+distance <- dist(top_10, method = "euclidean")
+hclusterTop10  <- hclust(distance, method = "complete")
+plot(hclusterTop10, cex = 0.8, hang = -1)
+hclusterCut10 <- cutree(hclusterTop10, k = 2)
+
+#100 most variable genes Hierarchical Clustering
+distance <- dist(top_100, method = "euclidean")
+hclusterTop100  <- hclust(distance, method = "complete")
+plot(hclusterTop100, cex = 0.8, hang = -1)
+hclusterCut100 <- cutree(hclusterTop100, k = 2)
+
+#1000 most variable genes Hierarchical Clustering
+distance <- dist(top_1000, method = "euclidean")
+hclusterTop1000  <- hclust(distance, method = "complete")
+plot(hclusterTop1000, cex = 0.8, hang = -1)
+hclusterCut1000 <- cutree(hclusterTop1000, k = 2)
+
+#10000 most variable genes Hierarchical Clustering
+distance <- dist(top_10000, method = "euclidean")
+hclusterTop10000  <- hclust(distance, method = "complete")
+plot(hclusterTop10000, cex = 0.8, hang = -1)
+hclusterCut10000 <- cutree(hclusterTop10000, k = 2)
+
+```
+
 
 # Michael - PAM Clustering
 
