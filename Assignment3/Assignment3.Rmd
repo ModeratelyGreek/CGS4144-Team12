@@ -50,7 +50,7 @@ This next step loads data and annotation libraries per the instructions,
 but does not attempt to transform our Gene column to the Entrez IDs as
 this was unnecessary for downstream processing.
 
-```{r}
+```{r include=FALSE}
 # Mount requisite libraries, install clustering lib
 library(dplyr)
 library(tidyverse)
@@ -100,6 +100,9 @@ library(magrittr)
 # Check that files exist and are usable.
 file.exists(data_file)
 file.exists(metadata_file)
+```
+
+```{r include=FALSE}
 # Read in data and metadata TSV file and make Gene column into row names
 metadata <- readr::read_tsv(metadata_file)
 expression_df <- readr::read_tsv(data_file) %>%
@@ -178,6 +181,15 @@ fviz_nbclust(top_5000, kmeans, k.max = 6, method = "wss")
 # using the elbow method, the optimal number of clusters appears to be 4 (since this is around where the curve begins to flatten out)
 ```
 
+The elbow method visualized above reruns K-Means with different amounts
+of clusters and visualizes how "Total within sum of square" decreases.
+Whats that mean for us? The WSS metric explains proximity of points to
+their centroid. Lower values mean tighter groupings. The elbow method
+means we look for where the elbow in the curve occurs, picking a number
+of clusters K that does not overfit the data, but also provides a
+significant reduction in WSS compared to K-1 clusters. Here we choose 4
+as optimal.
+
 ```{r}
 #about 20 seconds
 kmeans_result_5000_three <- kmeans(top_5000,3,iter.max = 10, nstart = 25)
@@ -187,8 +199,12 @@ kmeans_result_5000_five <- kmeans(top_5000,5,iter.max = 10, nstart = 25)
 
 ```{r}
 #About 30 seconds
-fviz_cluster(kmeans_result_5000_five, data = top_5000, geom="point")
+fviz_cluster(kmeans_result_5000_four, data = top_5000, geom="point")
 ```
+
+Above we can see how these 4 clusters look when displayed in a 2D graph
+via PCA. This is a healthy "sanity-check" indicating our choice to use
+four clusters (per elbow method) is indeed acceptable.
 
 [**If you ran a method that requires you to select the number of
 clusters (k), how did changing this value change the results? Compare
@@ -269,6 +285,14 @@ ggplot(data = alluvialData, aes(axis1 = K3, axis2 = K4, axis3 = K5)) +
   labs(title = "KMeans for 10 Genes at K=3,4,5")
 ```
 
+The first of the alluvial plots here shows only 10 genes worth of data.
+We can see how the genes in cluster 1 persist largely within the same
+cluster, as do those in cluster 3. Therefore K-means seems to have
+elected to separate cluster 2 instead, in the K=3 vs K=4 transition. K=4
+--\> 5, we see cluster 2 again separated into 2 clusters. This is not
+overwhelmingly insightful other than that the cluster 1 and cluster 3
+from the initial run of K=2 must be pretty tight / robust.
+
 ```{r}
 alluvialData <- data.frame(
   K3 = kmeans_result_100_three$cluster, 
@@ -283,6 +307,14 @@ ggplot(data = alluvialData, aes(axis1 = K3, axis2 = K4, axis3 = K5)) +
   labs(title = "KMeans for 100 Genes at K=3,4,5")
 
 ```
+
+Things get more complicated with more genes. The visualization now shows
+that there is indeed some small scale separation that takes place.
+Cluster 2 (cluster 1 in the previous graph) now becomes cluster 4 but
+with some trailing off to 3 from K=2 --\> 3. Cluster 1 is no longer
+quite so robust, nor cluster 3 (which presumably correspond to 2 and 3
+in the N=10 graph above the current one), and instead each exibit
+substantial bifurcation from K=4 to K=5.
 
 ```{r}
 alluvialData <- data.frame(
@@ -299,6 +331,13 @@ ggplot(data = alluvialData, aes(axis1 = K3, axis2 = K4, axis3 = K5)) +
 
 ```
 
+Funnily enough bifurcation appears reduced in this graph relative to the
+N=100 example. This is because far more genes are introduced, creating a
+much more stable, monolithic cluster (2) that marginalizes cluster 3 and
+reduces the appearance of bifurcation (when in reality there are likely
+several sub-pixel slivers of 3 connecting it to other clusters from K=3
+--\> 4 and 4/ 4/5 in the latter transition.
+
 ```{r}
 alluvialData <- data.frame(
   K3 = kmeans_result_10000_three$cluster, 
@@ -313,6 +352,9 @@ ggplot(data = alluvialData, aes(axis1 = K3, axis2 = K4, axis3 = K5)) +
   labs(title = "KMeans for 10,000 Genes at K=3,4,5")
 
 ```
+
+Again, not much changes here. Same alluvial diagram, with significantly
+more data creating very large clusters as a result.
 
 # Sahas - Hierarchical Clustering (hclust)
 
@@ -382,6 +424,14 @@ plot(hclusterTop10000, cex = 0.8, hang = -1, labels = FALSE)
 hcluster_result_10000_two <- cutree(hclusterTop10000, k = 2)
 ```
 
+The dendrograms above help to illustrate the tree being produced by
+running variations of hierarchical clustering. Of interest is the very
+large offshoot of the majority of the genes segregated away from smaller
+groups in the 10,000 gene dendrogram. This will have consequences on the
+alluvial visuals below, and raises questions about logarithmically
+scaling the width of the bands alluvial diagrams produce, rather than
+linearly.
+
 Due to the nature of hierarchical clustering making the alluvial
 diagrams exceptionally disinteresting, we've opted to highlight only
 alluvials at 10 genes and 10,000 genes but with more divisions (you're
@@ -426,6 +476,13 @@ ggplot(data = alluvial_data, aes(axis1 = K2, axis2 = K3, axis3 = K4, axis4 = K5)
   labs(title = "Hierarchical Clustering across different values of K at 10000 genes")
 ```
 
+There are two diagrams here. The first shows how cluster 1 bifurcates in
+the first step of the tree, then cluster 3, and then cluster 3 again
+(into 3 and 5). The larger clusters that remain by the fourth column are
+presumably some of the more tightly grouped ones, though by this point
+we're creating single-gene groupings which mean very little. By
+contrast, lets look at what happens when we visualize 10,000 genes...
+
 You're probably thinking "that doesn't look right". Au contraire. If we
 look at the dendrogram for 10,000 genes we see how the ensuing splits in
 the hierarchy take place on the left side with one giant arm reaching to
@@ -456,7 +513,12 @@ pam_result_10000_three <- pam(top_10000m, k = k)
 
 🚨The instructions linked to PAM suggested the use of a dissimilarity
 matrix but I couldnt get fviz and other operations downstream to work
-with it, so im just doing PAM the classic way.
+with it, so im just doing PAM the classic way (it generates the
+dissimilarity matrix). I suspect this is why the run time is so
+crippling. Please consider enjoying some popcorn or perhaps painting the
+nearest surface before hitting run on this next cell, so that you may
+enjoy some semblance of stimulation. Your RAM usage graph may also be
+amusing to watch.
 
 ```{r}
 #Let's compare K values:
@@ -547,6 +609,23 @@ ggplot(
   ylab("Gene Index") +
   labs(title = "PAM for 5000 Genes at K=2,3,4,5,6")
 ```
+
+And what a beautiful alluvial it is. I've color coded the segments by
+their distribution to the clusters in K=6 instead of K=2 as in the
+earlier alluvials. The result is we can see very clearly how the initial
+2 clusters are subdivided, such that by the time we get to K=6, no
+exceptionally monolithic cluster remains. Of intrigue is cluster 5/6 in
+K=4/5, which is utterly marginalized and yet elected by PAM as a
+suitable and significantly isolatable set of points. Visualizing this
+cluster in PCA seems like a good choice, and indeed, when visualized in
+the plots earlier, we see the pink points as signficiant outliers. These
+genes are likely very differentially expressed relative to all other
+genes in the sample. Very interesting indeed. A lesson here is that the
+marginalized groups of an alluvial are often intriguing, making it a
+poor visualization for those interesting outliers (though they capture
+macroscopic trends that are still surely significant and more likely to
+be relevant to the disease or affliction we're usually trying to capture
+in bioinformatics).
 
 3.  Heatmaps and Dendrograms
 
