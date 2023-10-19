@@ -57,6 +57,11 @@ library(tidyverse)
 library(readr)
 library(factoextra)
 
+if(!require("ggplot2"))
+  install.packages("ggplot2")
+if(!require("ggalluvial"))
+  install.packages("ggalluvial")
+
 # Create the data folder if it doesn't exist
 if (!dir.exists("data")) {
   dir.create("data")
@@ -181,7 +186,8 @@ kmeans_result_5000_five <- kmeans(top_5000,5,iter.max = 10, nstart = 25)
 ```
 
 ```{r}
-fviz_cluster(kmeans_result_5000_five, data = top_5000)
+#About 30 seconds
+fviz_cluster(kmeans_result_5000_five, data = top_5000, geom="point")
 ```
 
 [**If you ran a method that requires you to select the number of
@@ -250,11 +256,6 @@ of genes increased, a reduction in sum of squares at a k of 4 was
 calculated as 70.5%, 36.8%, 35.5,% and 39.1%.
 
 ```{r}
-if(!require("ggplot2"))
-  install.packages("ggplot2")
-if(!require("ggalluvial"))
-  install.packages("ggalluvial")
-
 alluvialData <- data.frame(
   K3 = kmeans_result_10_three$cluster, 
   K4 = kmeans_result_10_four$cluster, 
@@ -269,11 +270,6 @@ ggplot(data = alluvialData, aes(axis1 = K3, axis2 = K4, axis3 = K5)) +
 ```
 
 ```{r}
-if(!require("ggplot2"))
-  install.packages("ggplot2")
-if(!require("ggalluvial"))
-  install.packages("ggalluvial")
-
 alluvialData <- data.frame(
   K3 = kmeans_result_100_three$cluster, 
   K4 = kmeans_result_100_four$cluster, 
@@ -289,11 +285,6 @@ ggplot(data = alluvialData, aes(axis1 = K3, axis2 = K4, axis3 = K5)) +
 ```
 
 ```{r}
-if(!require("ggplot2"))
-  install.packages("ggplot2")
-if(!require("ggalluvial"))
-  install.packages("ggalluvial")
-
 alluvialData <- data.frame(
   K3 = kmeans_result_1000_three$cluster, 
   K4 = kmeans_result_1000_four$cluster, 
@@ -309,11 +300,6 @@ ggplot(data = alluvialData, aes(axis1 = K3, axis2 = K4, axis3 = K5)) +
 ```
 
 ```{r}
-if(!require("ggplot2"))
-  install.packages("ggplot2")
-if(!require("ggalluvial"))
-  install.packages("ggalluvial")
-
 alluvialData <- data.frame(
   K3 = kmeans_result_10000_three$cluster, 
   K4 = kmeans_result_10000_four$cluster, 
@@ -330,11 +316,11 @@ ggplot(data = alluvialData, aes(axis1 = K3, axis2 = K4, axis3 = K5)) +
 
 # Sahas - Hierarchical Clustering (hclust)
 
-[Note, \~7 minute runtime on Macbook Air M2 (known for CPU), expect
+[Note, \~1 minute runtime on Macbook Air M2 (known for CPU), expect
 delay.]{.underline}
 
 ```{r}
-#5000 most variable genes Hierarchical Clustering
+# 5000 most variable genes Hierarchical Clustering
 distance <- dist(top_5000, method = "euclidean")
 hcluster  <- hclust(distance, method = "complete")
 # 1 cluster
@@ -348,34 +334,104 @@ hcluster_result_5000_three <- cutree(hcluster, k = 3)
 h <- plot(hcluster, cex = 0.8, hang = -1)
 #rect.hclust(hcluster, k = 2, border = 2:5)
 
-# Visualize clusters
-fviz_cluster(list(data = top_5000, cluster = hcluster_result_5000_two), geom = ("point"))
+# If you ran a method that requires you to select the number of clusters (k), how did changing # this value change the results? Compare cluster membership at each k to investigate this.
 
+# Visualize clusters
+fviz_cluster(list(data = top_5000, cluster = hcluster_result_5000_one), geom = ("point"))
+fviz_cluster(list(data = top_5000, cluster = hcluster_result_5000_two), geom = ("point"))
+fviz_cluster(list(data = top_5000, cluster = hcluster_result_5000_three), geom = ("point"))
+```
+
+Here we can see the noticeable difference in cluster membership between
+K=2 and K=3 - the points on the top right of the scatterplot here are
+divided into two new groups while the lower leftmost cluster remains
+untouched and continues to overlap with a few of the red points. Such is
+the nature of hierarchical clustering - cluster allocation remains
+static and is merely subidivided at each step. Picking a different K
+value just cuts the tree lower, it does not rerun the algorithm and
+inform us of a new optimal allocation, but instead tells us about which
+cluster, at each step, when subdivided, maximally increases
+discrimination (its greedy!). Therefore observing differences in cluster
+membership yields little intrigue or insight.
+
+Expect further delay (\~1 mins?)
+
+```{r}
 # 10 most variable genes Hierarchical Clustering
 distance <- dist(top_10, method = "euclidean")
 hclusterTop10  <- hclust(distance, method = "complete")
-plot(hclusterTop10, cex = 0.8, hang = -1)
-hclusterCut10 <- cutree(hclusterTop10, k = 2)
+plot(hclusterTop10, cex = 0.8, hang = -1, labels = TRUE)
+hcluster_result_10_two <- cutree(hclusterTop10, k = 2)
 
 # 100 most variable genes Hierarchical Clustering
 distance <- dist(top_100, method = "euclidean")
 hclusterTop100  <- hclust(distance, method = "complete")
-plot(hclusterTop100, cex = 0.8, hang = -1)
-hclusterCut100 <- cutree(hclusterTop100, k = 2)
+plot(hclusterTop100, cex = 0.8, hang = -1, labels = FALSE)
+hcluster_result_100_two <- cutree(hclusterTop100, k = 2)
 
 # 1000 most variable genes Hierarchical Clustering
 distance <- dist(top_1000, method = "euclidean")
 hclusterTop1000  <- hclust(distance, method = "complete")
-plot(hclusterTop1000, cex = 0.8, hang = -1)
-hclusterCut1000 <- cutree(hclusterTop1000, k = 2)
+plot(hclusterTop1000, cex = 0.8, hang = -1, labels = FALSE)
+hcluster_result_1000_two <- cutree(hclusterTop1000, k = 2)
 
 # 10000 most variable genes Hierarchical Clustering
 distance <- dist(top_10000, method = "euclidean")
 hclusterTop10000  <- hclust(distance, method = "complete")
-plot(hclusterTop10000, cex = 0.8, hang = -1)
-hclusterCut10000 <- cutree(hclusterTop10000, k = 2)
-
+plot(hclusterTop10000, cex = 0.8, hang = -1, labels = FALSE)
+hcluster_result_10000_two <- cutree(hclusterTop10000, k = 2)
 ```
+
+Due to the nature of hierarchical clustering making the alluvial
+diagrams exceptionally disinteresting, we've opted to highlight only
+alluvials at 10 genes and 10,000 genes but with more divisions (you're
+more or less looking at a horizontal dendrogram...)
+
+```{r}
+hcluster_result_10_two <- cutree(hclusterTop10, k = 2)
+hcluster_result_10_three <- cutree(hclusterTop10, k = 3)
+hcluster_result_10_four <- cutree(hclusterTop10, k = 4)
+hcluster_result_10_five <- cutree(hclusterTop10, k = 5)
+hcluster_result_10000_two <- cutree(hclusterTop10000, k = 2)
+hcluster_result_10000_three <- cutree(hclusterTop10000, k = 3)
+hcluster_result_10000_four <- cutree(hclusterTop10000, k = 4)
+hcluster_result_10000_five <- cutree(hclusterTop10000, k = 5)
+
+alluvial_data <- data.frame(
+  K2 = hcluster_result_10_two,
+  K3 = hcluster_result_10_three,
+  K4 = hcluster_result_10_four,
+  K5 = hcluster_result_10_five
+)
+
+ggplot(data = alluvial_data, aes(axis1 = K2, axis2 = K3, axis3 = K4, axis4 = K5)) +
+  geom_alluvium(aes(fill = K2)) +
+  geom_stratum() +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+  theme_minimal() +
+  labs(title = "Hierarchical Clustering across different values of K at 10 genes")
+
+alluvial_data <- data.frame(
+  K2 = hcluster_result_10000_two,
+  K3 = hcluster_result_10000_three,
+  K4 = hcluster_result_10000_four,
+  K5 = hcluster_result_10000_five
+)
+
+ggplot(data = alluvial_data, aes(axis1 = K2, axis2 = K3, axis3 = K4, axis4 = K5)) +
+  geom_alluvium(aes(fill = K2)) +
+  geom_stratum() +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+  theme_minimal() +
+  labs(title = "Hierarchical Clustering across different values of K at 10000 genes")
+```
+
+You're probably thinking "that doesn't look right". Au contraire. If we
+look at the dendrogram for 10,000 genes we see how the ensuing splits in
+the hierarchy take place on the left side with one giant arm reaching to
+the right. This is the "cluster 2" which is renamed to cluster 4 on the
+final column by chance, but represents this large undivided branch of
+the tree that is only subdivided later in the hierarchy.
 
 # Michael - PAM Clustering
 
@@ -389,49 +445,50 @@ top_1000m = sweep(top_1000,1, apply(top_1000,1,median,na.rm=T))
 top_5000m = sweep(top_5000,1, apply(top_5000,1,median,na.rm=T))
 top_10000m = sweep(top_10000,1, apply(top_10000,1,median,na.rm=T))
 
+#Takes quite a while at 10,000
 k <- 3
-pam_result_top10 <- pam(top_10m, k = k, diss = TRUE)
-pam_result_top100 <- pam(top_100m, k = k, diss = TRUE)
-pam_result_top1000 <- pam(top_1000m, k = k, diss = TRUE)
-pam_result_top5000 <- pam(top_5000m, k = k, diss = TRUE)
-pam_result_top10000 <- pam(top_10000m, k = k, diss = TRUE)
+pam_result_10_three <- pam(top_10m, k = k)
+pam_result_100_three <- pam(top_100m, k = k)
+pam_result_1000_three <- pam(top_1000m, k = k)
+pam_result_5000_three <- pam(top_5000m, k = k)
+pam_result_10000_three <- pam(top_10000m, k = k)
 ```
+
+🚨The instructions linked to PAM suggested the use of a dissimilarity
+matrix but I couldnt get fviz and other operations downstream to work
+with it, so im just doing PAM the classic way.
 
 ```{r}
 #Let's compare K values:
-k <- 3
-pam_result_top5000 <- pam(top_5000m, k = k, diss = TRUE)
-cluster_counts <- table(pam_result_top5000$clustering)
+
+cluster_counts <- table(pam_result_5000_three$clustering)
 cluster_counts
 
-k <- 4
-pam_result_top5000 <- pam(top_5000m, k = k, diss = TRUE)
-cluster_counts <- table(pam_result_top5000$clustering)
+pam_result_5000_four <- pam(top_5000m, k = 4)
+cluster_counts <- table(pam_result_5000_four$clustering)
 cluster_counts
 
-k <- 5
-pam_result_top5000 <- pam(top_5000m, k = k, diss = TRUE)
-cluster_counts <- table(pam_result_top5000$clustering)
+pam_result_5000_five <- pam(top_5000m, k = 5)
+cluster_counts <- table(pam_result_5000_five$clustering)
 cluster_counts
 
-k <- 6
-pam_result_top5000 <- pam(top_5000m, k = k, diss = TRUE)
-cluster_counts <- table(pam_result_top5000$clustering)
+pam_result_5000_six <- pam(top_5000m, k = 6)
+cluster_counts <- table(pam_result_5000_six$clustering)
 cluster_counts
 ```
 
-[I spent over an hour attempting to generate a nice sankey diagram of
-the transitions of genes between clusters but was unable to do so and
-have concluded that even if I did, the information would not be
-overwhelmingly insightful. Point is, we can see that increasing the
-cluster count discriminates our top 5000 genes into additional groups.
-To evaluate "goodness of clustering" we can use the silhouette method,
-which is comparable to agglomerative clustering in how it measures
-goodness as a function of not only proximity of points within clusters
-but of the distance between clusters. By graphing the sillhouette score
-for different K values, we can identify an optimal K. I learned of
-silhouette in the PAM instructions and while investigating goodness of
-clustering methods for PAM.]{.underline}
+```{r}
+fviz_cluster(pam_result_5000_three, geom = "point")
+fviz_cluster(pam_result_5000_four,  geom = "point")
+fviz_cluster(pam_result_5000_five, geom = "point")
+fviz_cluster(pam_result_5000_six, geom = "point")
+```
+
+We can see how membership changes above, at least in the two chosen
+dimensions for the visualization (since we're operating on 1600
+dimensional data). Indeed it seems that more clusters reduce the
+overlap, but the extent to which they reduce the overlap is better
+demonstrated through the sillhouette method shown below:
 
 🚨[Note, takes \~4 minutes on macbook air M2.]{.underline}
 
@@ -440,102 +497,55 @@ clustering methods for PAM.]{.underline}
 library(factoextra)
 fviz_nbclust(top_5000m, pam, k.max = 6, verbose = TRUE, print.summary = TRUE, method = "silhouette")
 
-#should identify 2 as optimal K value
+#should identify 2 as optimal K value, which is a function of sillhouette score
 ```
 
-```{r}
-pam_result_top5000 <- pam(top_5000m, k = 2, diss = TRUE)
-fviz_silhouette(pam_result_top5000, label=TRUE)
-```
+The sillhouette method used above is looking at all the points resulting
+from different K values of PAM, giving them a score (based on their
+proximity to their assigned cluster and distance to other clusters), and
+then averaging the score accross all points to determine a total score
+that represents discrimination. We'd expect this to increase with more
+clusters but alas it seems 2 clusters is locally optimal in effectively
+segregating our genes.
+
+Below I visualize the sillhouette score. We can see the genes in the two
+clusters that overlap, they are relatively few (the part of the red and
+blue chunk below 0). The dotted red line represents the average score,
+which is excellent. The X axis is individual genes though I've removed
+the label to keep things clean!
 
 ```{r}
-is_alluvia_form(copy_ten)
-ggplot(
-  data = copy_ten,
-  aes(
-    axis1 = Gene,
-    axis2 = cluster, 
-    y = row_variance
-  )
+pam_result_5000_two <- pam(top_5000m, k = 2, diss = TRUE)
+fviz_silhouette(pam_result_top5000, label=FALSE)
+```
+
+Finally lets look at an alluvial. Since 10,000 for PAM is very
+computationally expensive, I will instead show an alluvial at 5000 for
+many K values.
+
+```{r}
+
+top_5000G <- top_5000 %>%
+  tibble::rownames_to_column("Gene")
+alluvialData <- data.frame(
+  K2 = pam_result_5000_two$clustering, 
+  K3 = pam_result_5000_three$clustering, 
+  K4 = pam_result_5000_four$clustering,
+  K5 = pam_result_5000_five$clustering,
+  K6 = pam_result_5000_six$clustering
 )
 
-scale_x_discrete(
-  limits = c("Gene", "Cluster", "row_variance"), 
-  expand = c(.2, .05)
-) 
-  
-xlab("Gene Clusters")
-geom_alluvium(aes(fill = cluster))
-geom_stratum()
-geom_text(stat = "stratum", aes(label = after_stat(stratum)))
-theme_minimal()
-ggtitle("10 Genes with 4 Clusters (K-means)")
-```
-
-```{r}
-
-#an alluvial diagram needs to be created for EACH of the clustering methods for 10, 100, 1000, and 10000 genes
-copy_100 <- top_100
-copy_100$cluster <- k_ten$cluster
-#copy_ten
-is_alluvia_form(copy_100)
-copy_100 <- copy_100 %>%
-  tibble::rownames_to_column("Gene")
-
-ggplot(data = copy_100,
-       aes(axis1 = Gene, axis2 = cluster, 
-           y = row_variance)) +
-  scale_x_discrete(limits = c("Gene", "Cluster", "row_variance"), expand = c(.2, .05)) +
-  xlab("Gene Clusters") +
-  geom_alluvium(aes(fill = cluster)) +
+ggplot(
+  data = alluvialData, 
+  aes(axis1 = K2, axis2 = K3, axis3 = K4, axis4 = K5, axis5 = K6)
+) +
+  geom_alluvium(aes(fill = K6)) +
   geom_stratum() +
   geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
-  theme_minimal() +
-  ggtitle("100 Genes with 4 Clusters (K-means)")
-
-  
-```
-
-```{r}
-#an alluvial diagram needs to be created for EACH of the clustering methods for 10, 100, 1000, and 10000 genes
-copy_1000 <- top_1000
-copy_1000$cluster <- k_ten$cluster
-#copy_ten
-is_alluvia_form(copy_1000)
-copy_1000 <- copy_1000 %>%
-  tibble::rownames_to_column("Gene")
-
-ggplot(data = copy_1000,
-       aes(axis1 = Gene, axis2 = cluster, 
-           y = row_variance)) +
-  scale_x_discrete(limits = c("Gene", "Cluster", "row_variance"), expand = c(.2, .05)) +
-  xlab("Gene Clusters") +
-  geom_alluvium(aes(fill = cluster)) +
-  geom_stratum() +
-  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
-  theme_minimal() +
-  ggtitle("1,000 Genes with 4 Clusters (K-means)")
-```
-
-```{r}
-#an alluvial diagram needs to be created for EACH of the clustering methods for 10, 100, 1000, and 10000 genes
-copy_10000 <- top_10000
-copy_10000$cluster <- k_ten$cluster
-#copy_ten
-is_alluvia_form(copy_10000)
-copy_10000 <- copy_10000 %>%
-  tibble::rownames_to_column("Gene")
-
-ggplot(data = copy_10000,
-       aes(axis1 = Gene, axis2 = cluster, 
-           y = row_variance)) +
-  scale_x_discrete(limits = c("Gene", "Cluster", "row_variance"), expand = c(.2, .05)) +
-  xlab("Gene Clusters") +
-  geom_alluvium(aes(fill = cluster)) +
-  geom_stratum() +
-  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
-  theme_minimal() +
-  ggtitle("10,000 Genes with 4 Clusters (K-means)")
+  theme_classic() +
+  xlab("Amount of Clusters") +
+  ylab("Gene Index") +
+  labs(title = "PAM for 5000 Genes at K=2,3,4,5,6")
 ```
 
 3.  Heatmaps and Dendrograms
