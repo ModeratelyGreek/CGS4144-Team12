@@ -35,8 +35,6 @@ code blocks beneath each.
     step 5 and instead hope to meet the criteria by elaborating on all
     provided images and tables adjacently to each.
 
--   ⭐️ Stars denote items corresponding directly to the rubric
-
 1.  [**Load into R the expression data and matching metadata that you
     processed in Assignment 2.**]{.underline}
 
@@ -290,16 +288,14 @@ ggplot(data = alluvialData, aes(axis1 = K3, axis2 = K4, axis3 = K5)) +
   geom_stratum() +
   geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
   theme_minimal() +
-  labs(title = "KMeans for 10 Genes at K=3,4,5")
+  labs(title = "KMeans for 10 Samples at K=3,4,5")
 ```
 
-The first of the alluvial plots here shows only 10 genes worth of data.
-We can see how the genes in cluster 1 persist largely within the same
-cluster, as do those in cluster 3. Therefore K-means seems to have
-elected to separate cluster 2 instead, in the K=3 vs K=4 transition. K=4
---\> 5, we see cluster 2 again separated into 2 clusters. This is not
-overwhelmingly insightful other than that the cluster 1 and cluster 3
-from the initial run of K=2 must be pretty tight / robust.
+The first of the alluvial plots here shows only 10 samples worth of
+data. We can see how the samples in cluster 1 bifurcate early, while the
+samples of cluster 2 at K=4 column bifurcate into groups 3 and 5 at K=5.
+Nothing overwhelmingly insightful here, but lets see what happens with
+more genes.
 
 ```{r}
 alluvialData <- data.frame(
@@ -316,13 +312,13 @@ ggplot(data = alluvialData, aes(axis1 = K3, axis2 = K4, axis3 = K5)) +
 
 ```
 
-Things get more complicated with more genes. The visualization now shows
-that there is indeed some small scale separation that takes place.
-Cluster 2 (cluster 1 in the previous graph) now becomes cluster 4 but
-with some trailing off to 3 from K=2 --\> 3. Cluster 1 is no longer
-quite so robust, nor cluster 3 (which presumably correspond to 2 and 3
-in the N=10 graph above the current one), and instead each exibit
-substantial bifurcation from K=4 to K=5.
+Things get more complicated with more genes. We can see the pattern of
+bifurcations appears to be significantly different although of some
+intrigue is the relatively robust group 3 chosen at K=3 which seems to
+barely bifurcate at all (a small fraction goes to group 2). Perhaps this
+group is the mostly tightly, whereas clearly the grey bands of group 1
+from K3 are going many places indicating it was a poor discriminant and
+likely of lesser significance.
 
 ```{r}
 alluvialData <- data.frame(
@@ -339,12 +335,9 @@ ggplot(data = alluvialData, aes(axis1 = K3, axis2 = K4, axis3 = K5)) +
 
 ```
 
-Funnily enough bifurcation appears reduced in this graph relative to the
-N=100 example. This is because far more genes are introduced, creating a
-much more stable, monolithic cluster (2) that marginalizes cluster 3 and
-reduces the appearance of bifurcation (when in reality there are likely
-several sub-pixel slivers of 3 connecting it to other clusters from K=3
---\> 4 and 4/ 4/5 in the latter transition.
+Again the pattern changes dramatically. This is unsurprising given we
+are adding more highly variable genes to the mix. Little more is to be
+said.
 
 ```{r}
 alluvialData <- data.frame(
@@ -361,8 +354,9 @@ ggplot(data = alluvialData, aes(axis1 = K3, axis2 = K4, axis3 = K5)) +
 
 ```
 
-Again, not much changes here. Same alluvial diagram, with significantly
-more data creating very large clusters as a result.
+This last diagram is perhaps the most significant in examining groups
+since it is based on the most data. Cluster 2(K3) is exceptional here
+and bifurcates minimally indicating a high "goodness of clustering".
 
 # Sahas - Hierarchical Clustering (hclust)
 
@@ -374,11 +368,11 @@ delay.]{.underline}
 distance <- dist(top_5000, method = "euclidean")
 hcluster  <- hclust(distance, method = "complete")
 # 1 cluster
-hcluster_result_5000_one <- cutree(hcluster, k = 1)
-# 2 clusters
 hcluster_result_5000_two <- cutree(hcluster, k = 2)
-# 3 clusters 
+# 2 clusters
 hcluster_result_5000_three <- cutree(hcluster, k = 3)
+# 3 clusters 
+hcluster_result_5000_four <- cutree(hcluster, k = 4)
 
 # Visualize dendrogram
 h <- plot(hcluster, cex = 0.8, hang = -1)
@@ -387,31 +381,30 @@ h <- plot(hcluster, cex = 0.8, hang = -1)
 # If you ran a method that requires you to select the number of clusters (k), how did changing # this value change the results? Compare cluster membership at each k to investigate this.
 
 # Visualize clusters
-fviz_cluster(list(data = top_5000, cluster = hcluster_result_5000_one), geom = ("point"))
-fviz_cluster(list(data = top_5000, cluster = hcluster_result_5000_two), geom = ("point"))
-fviz_cluster(list(data = top_5000, cluster = hcluster_result_5000_three), geom = ("point"))
+fviz_cluster(list(data = top_5000, cluster = hcluster_result_5000_two), geom = "point")
+fviz_cluster(list(data = top_5000, cluster = hcluster_result_5000_three), geom = "point")
+fviz_cluster(list(data = top_5000, cluster = hcluster_result_5000_four), geom = "point")
 ```
 
-Here we can see the noticeable difference in cluster membership between
-K=2 and K=3 - the points on the top right of the scatterplot here are
-divided into two new groups while the lower leftmost cluster remains
-untouched and continues to overlap with a few of the red points. Such is
-the nature of hierarchical clustering - cluster allocation remains
-static and is merely subidivided at each step. Picking a different K
-value just cuts the tree lower, it does not rerun the algorithm and
-inform us of a new optimal allocation, but instead tells us about which
-cluster, at each step, when subdivided, maximally increases
-discrimination (its greedy!). Therefore observing differences in cluster
-membership yields little intrigue or insight.
+This set of graphs is quite interesting. The two cluster graph amusingly
+displays what appears to be a single cluster, likely another folly of
+the 2D world. The three cluster graph shows how the larger visible
+cluster has bifurcated (this time quite literally given the nature of
+hierarchical clustering). The four cluster graph further divides these
+two larger clusters, though it is unclear from which the points of
+cluster 1 originate, but the extremely tight cluster (now cluster 4)
+remains centered and nearly invisible.
 
 Expect further delay (\~1 mins?)
 
 ```{r}
+# HClust Top 10 fails to work here, as there is presumably not enough data? The origin of the issue is unclear but the dendrogram is deemed invalid.
+
 # 10 most variable genes Hierarchical Clustering
-distance <- dist(top_10, method = "euclidean")
-hclusterTop10  <- hclust(distance, method = "complete")
-plot(hclusterTop10, cex = 0.8, hang = -1, labels = TRUE)
-hcluster_result_10_two <- cutree(hclusterTop10, k = 2)
+#distance <- dist(top_10, method = "euclidean")
+#hclusterTop10  <- hclust(distance, method = "complete")
+#plot(hclusterTop10, cex = 0.8, hang = -1, labels = TRUE)
+#hcluster_result_10_two <- cutree(hclusterTop10, k = 2)
 
 # 100 most variable genes Hierarchical Clustering
 distance <- dist(top_100, method = "euclidean")
@@ -484,17 +477,17 @@ ggplot(data = alluvial_data, aes(axis1 = K2, axis2 = K3, axis3 = K4, axis4 = K5)
   labs(title = "Hierarchical Clustering across different values of K at 10000 genes")
 ```
 
-There are two diagrams here. The first shows how cluster 1 bifurcates in
-the first step of the tree, then cluster 3, and then cluster 3 again
-(into 3 and 5). The larger clusters that remain by the fourth column are
-presumably some of the more tightly grouped ones, though by this point
-we're creating single-gene groupings which mean very little. By
-contrast, lets look at what happens when we visualize 10,000 genes...
+There are two diagrams here, the first showing almost nothing of
+interest because as per the nature of hierarchical clustering, groups
+are perfectly divided and do not allow samples to cross over to other
+branches halfway down the tree. Thus from K2\--\>3 to 3, 2 bifurcates to
+2/3, from K3\--\>4, 1 bifurcates to 1 and 2, and so on. Very simple. As
+for the second alluvial...
 
 You're probably thinking "that doesn't look right". Au contraire. If we
 look at the dendrogram for 10,000 genes we see how the ensuing splits in
-the hierarchy take place on the left side with one giant arm reaching to
-the right. This is the "cluster 2" which is renamed to cluster 4 on the
+the hierarchy take place on the right side with one giant arm reaching
+to the left This is the "cluster 2" which is renamed to cluster 4 on the
 final column by chance, but represents this large undivided branch of
 the tree that is only subdivided later in the hierarchy.
 
@@ -555,10 +548,14 @@ fviz_cluster(pam_result_5000_six, geom = "point")
 ```
 
 We can see how membership changes above, at least in the two chosen
-dimensions for the visualization (since we're operating on 1600
-dimensional data). Indeed it seems that more clusters reduce the
+dimensions for the visualization (since we're operating on
+5000-dimensional data). Indeed it seems that more clusters reduce the
 overlap, but the extent to which they reduce the overlap is better
-demonstrated through the sillhouette method shown below:
+demonstrated through the sillhouette method shown below, because,
+amusingly, the new clusters introduced in the 2D field above show
+literally 0 reduction in overlap. 4 of the generated clusters overlap
+almost perfectly with eachother, implying the PCA has failed to
+adequately visualize these groups.
 
 🚨[Note, takes \~4 minutes on macbook air M2.]{.underline}
 
@@ -575,23 +572,33 @@ from different K values of PAM, giving them a score (based on their
 proximity to their assigned cluster and distance to other clusters), and
 then averaging the score accross all points to determine a total score
 that represents discrimination. We'd expect this to increase with more
-clusters but alas it seems 2 clusters is locally optimal in effectively
-segregating our genes.
+clusters but alas it seems 1 cluster is locally optimal in effectively
+segregating our samples. This is pretty odd, but, the numbers dont seem
+to lie but the ensuing sillhouette scores aren't terribly worse, so I've
+chosen to show k=5 below.
 
-Below I visualize the sillhouette score. We can see the genes in the two
-clusters that overlap, they are relatively few (the part of the red and
-blue chunk below 0). The dotted red line represents the average score,
-which is excellent. The X axis is individual genes though I've removed
-the label to keep things clean!
+Below I visualize the sillhouette score. We can see the samples in the
+two clusters that overlap, they are relatively few (the part of the red
+and blue chunk below 0). The dotted red line represents the average
+score, which is excellent. The X axis is individual samples though I've
+removed the label to keep things clean!
 
 ```{r}
-pam_result_5000_two <- pam(top_5000m, k = 2, diss = TRUE)
-fviz_silhouette(pam_result_top5000, label=FALSE)
+pam_result_5000_five <- pam(top_5000m, k = 5)
+fviz_silhouette(pam_result_5000_five, label=FALSE)
 ```
+
+This sillhouette chart is hillarious. The loss in sillhouette score
+comes entirely from the red group which refuses to be separated by PAM
+whilst the other groups, especially pink (5), are exceptionally
+segregated with values almost exclusively in the positive domain.
+Perhaps if more clusters were added, the global or at least a new local
+optima K value of, say, 15 or 20 would be found, but for now monolithic
+cluster 1 is dragging the score down.
 
 Finally lets look at an alluvial. Since 10,000 for PAM is very
 computationally expensive, I will instead show an alluvial at 5000 for
-many K values.
+many K values as we already computed these above.
 
 ```{r}
 
@@ -615,39 +622,36 @@ ggplot(
   theme_classic() +
   xlab("Amount of Clusters") +
   ylab("Gene Index") +
-  labs(title = "PAM for 5000 Genes at K=2,3,4,5,6")
+  labs(title = "PAM for 5000 Samples at K=2,3,4,5,6")
 ```
 
-And what a beautiful alluvial it is. I've color coded the segments by
-their distribution to the clusters in K=6 instead of K=2 as in the
-earlier alluvials. The result is we can see very clearly how the initial
-2 clusters are subdivided, such that by the time we get to K=6, no
-exceptionally monolithic cluster remains. Of intrigue is cluster 5/6 in
-K=4/5, which is utterly marginalized and yet elected by PAM as a
-suitable and significantly isolatable set of points. Visualizing this
-cluster in PCA seems like a good choice, and indeed, when visualized in
-the plots earlier, we see the pink points as signficiant outliers. These
-genes are likely very differentially expressed relative to all other
-genes in the sample. Very interesting indeed. A lesson here is that the
-marginalized groups of an alluvial are often intriguing, making it a
-poor visualization for those interesting outliers (though they capture
-macroscopic trends that are still surely significant and more likely to
-be relevant to the disease or affliction we're usually trying to capture
-in bioinformatics).
+Nasty. We can see the monolithic cluster squeezing the other groups
+away, and making me ponder if a logarithimically scaled cluster size
+visualization would be preferable. Alas.\
 
-3.  Heatmaps and Dendrograms
+This speaks both to the significant goodness-of-cluster that this
+monolith is exhibiting and to the robust cluster 2 which also undergoes
+minimal subdivision in higher K values.
 
-    1.  Create a heatmap of the 5,000 genes used in clustering, with an
-        annotation sidebar showing one set of clusters you identified
+A lesson here is that the marginalized groups in an alluvial are often
+intriguing, making it a poor visualization for those interesting
+outliers (though they capture macroscopic trends that are still surely
+significant and more likely to be relevant to the disease or affliction
+we're usually trying to capture in bioinformatics).
+
+3.  [**Heatmaps and Dendrograms**]{.underline}
+
+    1.  [**Create a heatmap of the 5,000 genes used in clustering, with
+        an annotation sidebar showing one set of clusters you identified
         from each clustering method and the sample groups from
-        Assignment
-        1.  You should have n+1 annotation columns, 1 per clustering
+        Assignment**]{.underline}
+        1.  [**You should have n+1 annotation columns, 1 per clustering
             method and 1 for the sample groups\
-            in Assignment 1.
-        2.  Either create a different heatmap for each method or include
-            all in the same heatmap.
-        3.  Include a legend and axis labels
-        4.  Include row and column dendrograms
+            in Assignment 1.**]{.underline}
+        2.  [**Either create a different heatmap for each method or
+            include all in the same heatmap.**]{.underline}
+        3.  [**Include a legend and axis labels**]{.underline}
+        4.  [**Include row and column dendrograms**]{.underline}
 
 #3 K-Means Heatmap
 
@@ -666,21 +670,24 @@ ComplexHeatmap::draw(ht)
 
 ```
 
-4.  Statistics
+4.  [**Statistics**]{.underline}
 
-    1.  Does cluster membership correlate with the groups you chose in
-        Assignment 1? Perform a chi-squared test of independence to
+    1.  [**Does cluster membership correlate with the groups you chose
+        in Assignment 1? Perform a chi-squared test of independence to
         statistically compare the two. Do this for each clustering
         result you identified -- include all versions per clustering
-        approach. You are comparing your different clustering results.
-    2.  Adjust all statistical test results for multiple hypothesis
-        testing (p.adjust).
-    3.  Create a table with statistical test results that includes
-        adjusted and un-adjusted p-values.
+        approach. You are comparing your different clustering
+        results.**]{.underline}
+    2.  [**Adjust all statistical test results for multiple hypothesis
+        testing (p.adjust).**]{.underline}
+    3.  [**Create a table with statistical test results that includes
+        adjusted and un-adjusted p-values.**]{.underline}
 
 5.  Write a short summary for each plot/table you created in this
     assignment. In 3-5 sentences for each, describe what you did, what
     parameters you used (if any) and an interesting result from it.
+
+    ✅
 
 6.  As a team, fill out the team evaluation table below.
 
