@@ -159,6 +159,12 @@ top_100 <- head(expression_df, 100)
 top_1000 <- head(expression_df, 1000)
 top_5000 <- head(expression_df, 5000)
 top_10000 <- head(expression_df, 10000)
+
+top_10 <- as.data.frame(t(top_10))
+top_100 <- as.data.frame(t(top_100))
+top_1000 <- as.data.frame(t(top_1000))
+top_5000 <- as.data.frame(t(top_5000))
+top_10000 <- as.data.frame(t(top_10000))
 ```
 
 # 1B:
@@ -178,7 +184,7 @@ set.seed(123)
 #Expect a delay, takes a bit
 fviz_nbclust(top_5000, kmeans, k.max = 6, method = "wss")
 
-# using the elbow method, the optimal number of clusters appears to be 4 (since this is around where the curve begins to flatten out)
+# using the elbow method, the optimal number of clusters appears to be 2 (since this is around where the curve begins to flatten out most gently)
 ```
 
 The elbow method visualized above reruns K-Means with different amounts
@@ -187,7 +193,7 @@ Whats that mean for us? The WSS metric explains proximity of points to
 their centroid. Lower values mean tighter groupings. The elbow method
 means we look for where the elbow in the curve occurs, picking a number
 of clusters K that does not overfit the data, but also provides a
-significant reduction in WSS compared to K-1 clusters. Here we choose 4
+significant reduction in WSS compared to K-1 clusters. Here we choose 2
 as optimal.
 
 ```{r}
@@ -204,7 +210,9 @@ fviz_cluster(kmeans_result_5000_four, data = top_5000, geom="point")
 
 Above we can see how these 4 clusters look when displayed in a 2D graph
 via PCA. This is a healthy "sanity-check" indicating our choice to use
-four clusters (per elbow method) is indeed acceptable.
+four clusters (per elbow method) is indeed acceptable. The amount of
+overlap seen in 3 and 1 is concerning but this is perhaps merely an
+illusion of the 2D plane.
 
 [**If you ran a method that requires you to select the number of
 clusters (k), how did changing this value change the results? Compare
@@ -214,7 +222,7 @@ The K-means clustering method required me to select the number of
 clusters. To determine the ideal "k", I utilized the "factoextra"
 package to generate a graph showing the number of clusters versus the
 total within the sum of square. Using the elbow method, I determined
-that the optimal number of cluster was 4, and to test how changing the
+that the optimal number of clusters was 2, and to test how changing the
 value changed the results, ran the "kmeans" clustering command for a k
 of 3,4, and 5 to determine how changing k changed the results.
 
