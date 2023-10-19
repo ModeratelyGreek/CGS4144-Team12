@@ -728,6 +728,33 @@ exist, the heatmap unfortunately does not clearly reflect this fact.
         "PAM_K6_N5000" = pam_result_5000_six,
     )
 
+    new_expression_df <- readr::read_tsv(data_file) %>%
+      tibble::column_to_rownames("Gene")
+
+    metadata <- metadata %>%
+      dplyr::mutate(diabetes = dplyr::case_when(
+        stringr::str_detect(refinebio_subject, "non t2d") ~ "reference",
+        stringr::str_detect(refinebio_subject, "t2d") ~ "diabetic",
+      ))
+
+    #Remove ambiguously-labeled samples from metadata
+    culledMeta <- metadata[!(metadata$refinebio_subject=="pancreatic islets"),]
+
+    discardColumns <- metadata[(metadata$refinebio_subject=="pancreatic islets"),]
+    discardColumns = as.vector(discardColumns$refinebio_accession_code)
+    length(discardColumns)
+    #Preserve only columns in expression_df that match one of the accession ids
+    culled_expression_df = new_expression_df[,!(names(new_expression_df) %in% discardColumns)]
+
+    # Make mutation_status a factor and set the levels appropriately
+    culledMeta <- culledMeta %>%
+      dplyr::mutate(
+        # Here we define the values our factor variable can have and their order.
+        diabetes = factor(diabetes, levels = c("reference", "diabetic"))
+      )
+
+
+
     for (name in names(clusterResults)) {
         tbl <- table(results[[name]], reference_group)
         test <- p.adjust(chisq.test(tbl)$pval)
