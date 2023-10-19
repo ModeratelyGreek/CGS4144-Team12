@@ -653,21 +653,14 @@ we're usually trying to capture in bioinformatics).
         3.  [**Include a legend and axis labels**]{.underline}
         4.  [**Include row and column dendrograms**]{.underline}
 
-#3 K-Means Heatmap
-
-#for this, we need to also have the sample groupings (diabetic,
-non-diabetic AND pancreatic islets because we have to have all 5,000
-genes)
-
-#i am confused
+# K-Means Heatmap
 
 ```{r}
-mat_100<- data.matrix(copy_100,rownames.force = FALSE)
+mat_100<- data.matrix(top_100,rownames.force = FALSE)
 ht = ComplexHeatmap::Heatmap(mat_100,heatmap_legend_param = list(
         title = "Expression", at = c(0, 50, 100,150)
     ),column_title = "Clustered Genes",show_column_names = FALSE,cluster_columns = TRUE,cluster_rows = TRUE)
 ComplexHeatmap::draw(ht)
-
 ```
 
 4.  [**Statistics**]{.underline}
@@ -683,151 +676,49 @@ ComplexHeatmap::draw(ht)
     3.  [**Create a table with statistical test results that includes
         adjusted and un-adjusted p-values.**]{.underline}
 
-5.  Write a short summary for each plot/table you created in this
-    assignment. In 3-5 sentences for each, describe what you did, what
-    parameters you used (if any) and an interesting result from it.
-
-    ✅
-
-6.  As a team, fill out the team evaluation table below.
-
-    ✅
-
-7.  Combine all results into a single file, submit on Canvas. Make sure
-    that all your code is added to your GitHub repository.
-
-    ✅
-
-### 🚨🚨🚨🚨🚨🚨🚨🚨🚨Everything Below this Point is Assignment 2 (For reference) 🚨🚨🚨🚨🚨🚨🚨🚨🚨
-
-[Please insert your data files in the data directory such that the
-single folder from refine.bio containing the metadata TSV and main TSV
-file are present in the immediate subdirectory. This can be downloaded
-from google drive,
-[here!](https://drive.google.com/file/d/1aOnupOgIn-b7rSoGdRflNBvpfQPcR5v5/view?usp=sharing "Download folder to be unzipped as subdirectory of Data!")]{.underline}
-
-[This next step loads data and annotation libraries per the
-instructions, but does not attempt to transform our Gene column to the
-Entrez IDs as this was unnecessary for downstream
-processing.]{.underline}
-
-How much variation do you see in the data? To answer these questions,
-log-scale the data, calculate per-gene median expression ranges, then
-make a density plot showing those results.
+Alright first we must filter out the metadata a little, but also
+organize all the data against which we shall chi square:
 
 ```{r include=FALSE}
-#Log scale the data
-logscaleData <- expression_df
-logscaleData[, -1] <- log(logscaleData[, -1])
-logscaleData$median = apply(logscaleData[, -1], 1, median)
+results <- list(
+    "KMEANS_K5_N10" = kmeans_result_10_five$cluster,
+    "KMEANS_K4_N10" = kmeans_result_10_four$cluster,
+    "KMEANS_K3_N10" = kmeans_result_10_three$cluster,
+    "KMEANS_K5_N100" = kmeans_result_100_five$cluster,
+    "KMEANS_K4_N100" = kmeans_result_100_four$cluster,
+    "KMEANS_K3_N100" = kmeans_result_100_three$cluster,
+    "KMEANS_K5_N1000" = kmeans_result_1000_five$cluster,
+    "KMEANS_K4_N1000" = kmeans_result_1000_four$cluster,
+    "KMEANS_K3_N1000" = kmeans_result_1000_three$cluster,
+    "KMEANS_K5_N10000" = kmeans_result_10000_five$cluster,
+    "KMEANS_K4_N10000" = kmeans_result_10000_four$cluster,
+    "KMEANS_K3_N10000" = kmeans_result_10000_three$cluster,
+    "KMEANS_K5_N5000" = kmeans_result_5000_five$cluster,
+    "KMEANS_K4_N5000" = kmeans_result_5000_four$cluster,
+    "KMEANS_K3_N5000" = kmeans_result_5000_three$cluster,
+    "HCLUSTER_K5_N10" = hcluster_result_10_five,
+    "HCLUSTER_K4_N10" = hcluster_result_10_four,
+    "HCLUSTER_K3_N10" = hcluster_result_10_three,
+    "HCLUSTER_K2_N10" = hcluster_result_10_two,
+    "HCLUSTER_K5_N10000" = hcluster_result_10000_five,
+    "HCLUSTER_K4_N10000" = hcluster_result_10000_four,
+    "HCLUSTER_K3_N10000" = hcluster_result_10000_three,
+    "HCLUSTER_K2_N10000" = hcluster_result_10000_two,
+    "HCLUSTER_K4_N5000" = hcluster_result_5000_four,
+    "HCLUSTER_K3_N5000" = hcluster_result_5000_three,
+    "HCLUSTER_K2_N5000" = hcluster_result_5000_two,
+    "HCLUSTER_K1_N5000" = hcluster_result_5000_one,
+    "PAM_K3_N10" = pam_result_10_three,
+    "PAM_K3_N100" = pam_result_100_three,
+    "PAM_K3_N1000" = pam_result_1000_three,
+    "PAM_K3_N10000" = pam_result_10000_three,
+    "PAM_K2_N5000" = pam_result_5000_two,
+    "PAM_K3_N5000" = pam_result_5000_three,
+    "PAM_K4_N5000" = pam_result_5000_four,
+    "PAM_K5_N5000" = pam_result_5000_five,
+    "PAM_K6_N5000" = pam_result_5000_six,
+)
 
-#Create a function to find ranges per row
-calculate_range <- function(row) {
-  max_value <- max(row)
-  min_value <- min(row)
-  range_value <- max_value - min_value
-  return(range_value)
-}
-
-#Apply this to find ranges
-logscaleData$row_ranges <- apply(logscaleData[,-1], 1, calculate_range)
-```
-
-```{r}
-justPlotThis <- dplyr::select(logscaleData, columns="Gene", "median", "row_ranges")
-justPlotThis <- justPlotThis %>% 
-  dplyr::rename(
-    Genes = columns,
-    Median = median,
-    Range = row_ranges,
-    )
-
-plot(density(justPlotThis$Median), xlab="Median Expression Values", main="Density of Median Expression Values")
-```
-
-[The above density plot simply shows the density of the median values.
-It is barely bimodal with a second group visible at just over 1, these
-genes being the small group that is being expressed more than the
-majority.]{.underline}
-
-```{r}
-# First let's install the requisite libraries.
-    if (!("affy" %in% installed.packages())) {
-      # Install this package if it isn't installed yet
-      BiocManager::install("affy", update = FALSE)
-    }
-    
-expression_df <- readr::read_tsv(data_file) %>%
-  # Tuck away the Gene ID column as row names
-  tibble::column_to_rownames("Gene")
-
-library(scales)
-library(affy)
-myColors <- hue_pal()(4)
-
-plotDensity(log(expression_df+1), col=rep(myColors, each=3),
-            lty=c(1:ncol(logscaleData)), xlab='Log(count)',
-            main='Expression Density Distribution')
-```
-
-[⭐️Density Plot Showing Variation in Each Gene's Expression]{.underline}
-
-#### Summarize your findings.
-
-[The majority of the genes show negative median log-scaled expression (0
-to 1), simply implying minimal expression relative to other genes.
-However, a group can be seen with values near 1-2. These imply that the
-genes in this group are those which, relative to other genes gathered
-from the pancreatic islet cells samples, are being expressed the most.
-This stands against no particular control, however, and so does not
-yield any meaningful conclusions of the genes at hand being diabetic,
-but rather just genes that are expressed more.]{.underline}
-
-```{r}
-plot(density(justPlotThis$Range), xlab="Expression Value Ranges", main="Density of Expression Range Values")
-```
-
-[The range density plot shows an intriguing bimodal distribution. A
-large group of genes has a minimal range, whereas the majority of the
-genes fall close to a range of 3.5 (log scale) in expression between
-samples. Genes with a low variability across all samples are not
-interesting since this data set contains both diabetic and control
-patients.]{.underline}
-
-```{r include=FALSE}
-#Cleanup
-rm(justPlotThis)
-rm(logscaleData)
-rm(mapped_df)
-rm(mapped_list)
-rm(multi_mapped)
-rm(myColors)
-rm(calculate_range)
-```
-
-### 2. Now that you have loaded the expression data into R, generate a PCA plot:
-
--   If you have counts file(s), follow these DESeq2 directions to
-    generate an expression matrix.
--   Use the DESeq2 function plotPCA() to generate your plot (see here)
--   Color your plot by the 2 groups you identified in assignment 1
-    (e.g., Diabetic vs Non-Diabetic)
--   Make sure you include a legend and label the axes!
-
-```{r include=FALSE}
-# First let's install the requisite libraries.
-if (!("DESeq2" %in% installed.packages())) {
-  # Install this package if it isn't installed yet
-  BiocManager::install("DESeq2", update = FALSE)
-}
-
-# Attach the DESeq2 library
-library(DESeq2)
-```
-
-Alright, let's prep the metadata to better select what we need.
-
-```{r include=FALSE}
 new_expression_df <- readr::read_tsv(data_file) %>%
   tibble::column_to_rownames("Gene")
 
@@ -851,448 +742,23 @@ culledMeta <- culledMeta %>%
   dplyr::mutate(
     # Here we define the values our factor variable can have and their order.
     diabetes = factor(diabetes, levels = c("reference", "diabetic"))
-  )
-```
-
-```{r}
-round_culled_expression_df <- round(culled_expression_df)
-
-
-ddset <- DESeqDataSetFromMatrix(
-  # Here we supply non-normalized count data
-  countData = round_culled_expression_df,
-  # Supply the `colData` with our metadata data frame
-  colData = culledMeta,
-  # Supply our diabetes variable to `design`
-  design = ~diabetes #Diabetes_status
 )
 
-dds_norm <- vst(ddset)
-
-plotPCA(
-  dds_norm,
-  intgroup = "diabetes"
-)
-
-pca_results <-
-  plotPCA(
-    dds_norm,
-    intgroup = c("diabetes"),
-    returnData = TRUE # This argument tells R to return the PCA values
-  )
-
-ddset <- DESeqDataSetFromMatrix(
-  # Here we supply non-normalized count data
-  countData = round_culled_expression_df,
-  # Supply the `colData` with our metadata data frame
-  colData = culledMeta,
-  # Supply our diabetes variable to `design`
-  design = ~diabetes #Diabetes_status
-)
-
-dds_norm <- vst(ddset)
-
-plotPCA(
-  dds_norm,
-  intgroup = "diabetes"
-)
-
-pca_results <-
-  plotPCA(
-    dds_norm,
-    intgroup = c("diabetes"),
-    returnData = TRUE # This argument tells R to return the PCA values
-  )
-
+new_expression_df <- culledMeta %>%
+  tibble::column_to_rownames("refinebio_accession_code")
 ```
 
-[⭐️ PCA Plot Colored by Groups]{.underline}
+4.  Write a short summary for each plot/table you created in this
+    assignment. In 3-5 sentences for each, describe what you did, what
+    parameters you used (if any) and an interesting result from it.
 
--   PCA Plot Summary: [The PCA plot shows that the two groups diabetic
-    and non-diabetic separate into two different clusters. The
-    non-diabetic clusters tends to have less variance and is one uniform
-    cluster while the diabetic samples are separated into two different
-    uniform clusters that have more variance.]{.underline}
+    ✅
 
--   If you have 3 or 4 students in your group, also generate either
-    t-SNE or UMAP plot, and summarize the differences and similarities
-    between your two plots.
+5.  As a team, fill out the team evaluation table below.
 
--   UMAP:
+    ✅
 
-```{r}
-library("umap")
+6.  Combine all results into a single file, submit on Canvas. Make sure
+    that all your code is added to your GitHub repository.
 
-gene <- DESeqDataSetFromMatrix(
-  countData = round_culled_expression_df, # Counts values for all samples in our rounded dataset
-  colData = culldMeta, #  Supply the `colData` with our metadata data frame
-  design = ~diabetes #Supply our diabetes variable to `design`
-  # Diabetes_status
-)
-gene_norm <- vst(gene)
-normalized_counts <- assay(gene_norm) %>%
-  t() # transpose this data so each row is a sample
-umap_results <- umap::umap(normalized_counts)
-umap_plot_df <- data.frame(umap_results$layout) %>%
-  # Turn sample IDs from row names into a column
-  tibble::rownames_to_column("refinebio_accession_code") %>%
-  # Add the metadata into this data frame. Match by sample IDs
-  dplyr::inner_join(metadata, by = "refinebio_accession_code")
-#umap_plot_df (no need to show table, takes up 100 pages on pdf)
-ggplot(
-  umap_plot_df,
-  aes(
-    x = X1,
-    y = X2,
-    color = diabetes
-  )
-) +
-  geom_point() # Plot individual points to make a scatterplot
-```
-
--   [⭐️ UMAP Colored by Groups (3+ Students)]{.underline}
-
-    Save your plot(s) and summarize your findings.
-
--   UMAP Plot Summary - [The UMAP plot shows that the two groups are
-    clustered together in distinct groups. These clusters are the two
-    different cell types, diabetic and reference. There are a few
-    outliers in the plot where a few samples are displayed at the bottom
-    of the plot.]{.underline}
-
--   PCA Plot vs UMAP Plot Comparison - [PCA is a linear technique that
-    captures global structure and is computationally efficient, while
-    UMAP is a nonlinear technique that excels at preserving local
-    structure, making it well-suited for exploring complex relationships
-    and identifying clusters in high-dimensional data.]{.underline}
-
-```{r}
-#Cleanup
-rm(dds_norm)
-rm(gene)
-rm(gene_norm)
-rm(new_expression_df)
-rm(normalized_counts)
-rm(pca_results)
-rm(umap_plot_df)
-rm(umap_results)
-rm(ddset)
-```
-
-### 3. Perform differential analysis on the samples from your two groups, following the directions below
-
--   alexslemonade.github.io/refinebio-examples/03-rnaseq/differential-expression_rnaseq_01.html
-
--   Create a volcano plot of your data, following the directions above
-
-    ```{r include=FALSE}
-    if (!("EnhancedVolcano" %in% installed.packages())) {
-      # Install this package if it isn't installed yet
-      BiocManager::install("EnhancedVolcano", update = FALSE)
-    }
-    if (!("apeglm" %in% installed.packages())) {
-      # Install this package if it isn't installed yet
-      BiocManager::install("apeglm", update = FALSE)
-    }
-
-    # Attach the ggplot2 library for plotting
-    library(ggplot2)
-
-    # We will need this so we can use the pipe: %>%
-    library(magrittr)
-    ```
-
-    Volcano plot time.
-
-    ```{r include=FALSE}
-    filtered_expression_df <- culled_expression_df %>%
-      dplyr::filter(rowSums(.) >= 4000)
-
-    #This culls roughly 35000 genes that show insignificant expression.
-
-    gene_matrix <- round(filtered_expression_df)
-    ddset <- DESeqDataSetFromMatrix(
-      # Here we supply non-normalized count data
-      countData = gene_matrix,
-      # Supply the `colData` with our metadata data frame
-      colData = culledMeta,
-      # Supply our experimental variable to `design`
-      design = ~diabetes
-    )
-    ```
-
-    ```{r}
-    #This WILL take some time. To reduce it down from a minute, use adjust the number on the third line of the above cell. The higher, the more genes filtered out, the shorter DESeq will take but the worse the volcano plot will be.
-    deseq_object <- DESeq(ddset)
-    ```
-
-    ```{r include=FALSE}
-    deseq_results <- results(deseq_object)
-    deseq_results <- lfcShrink(
-      deseq_object, # The original DESeq2 object after running DESeq()
-      coef = 2, # The log fold change coefficient used in DESeq(); the default is 2.
-      res = deseq_results # The original DESeq2 results table
-    )
-
-    # this is of class DESeqResults -- we want a data frame
-    deseq_df <- deseq_results %>%
-      # make into data.frame
-      as.data.frame() %>%
-      # the gene names are row names -- let's make them a column for easy display
-      tibble::rownames_to_column("Gene") %>%
-      # add a column for significance threshold results
-      dplyr::mutate(threshold = padj < 0.05) %>%
-      # sort by statistic
-      dplyr::arrange(dplyr::desc(log2FoldChange))
-
-    volcano_plot <- EnhancedVolcano::EnhancedVolcano(
-      deseq_df,
-      lab = deseq_df$Gene,
-      x = "log2FoldChange",
-      y = "padj",
-      pCutoff = 0.01
-    )
-
-    ```
-
-    \
-    [⭐️Volcano Plot Showing Log Fold Change and
-    Significance]{.underline}
-
-    ```{r}
-    # Print out plot here
-    volcano_plot
-    ```
-
--   Create a table of differentially expressed genes.
-
-    ⭐️Table of statistically significant differentially expression genes
-    including method-dependent relevant info (p-value, log fold change,
-    etc).
-
-    ```{r}
-    head(deseq_df)
-    ```
-
--   Save and summarize your findings.
-
-    ```{r include=FALSE}
-    readr::write_tsv(
-      deseq_df,
-      file.path(
-        results_dir,
-        "diff_expr_results.tsv" # Replace with a relevant output file name
-      )
-    )
-    ```
-
-[It seems a handful of genes have stood out as having significant fold
-change in bot the positive and negative direction relative to the
-control. Of the 6827 genes examined, 357 meet the threshold discovered
-for significant change in differential expression, visualized as north
-of the grey line towards the bottom of the volcano plot. Some are
-exceptionally negative / positive, and are labeled for their
-uniqueness.]{.underline}
-
-```{r}
-#Cleanup
-
-```
-
-### 4. Extract the list of significantly differentially expressed genes, and generate a heatmap using ComplexHeatmap
-
--   Package reference
-    (<https://jokergoo.github.io/ComplexHeatmap-reference/book/>)
-
--   Add a side bar colored by sample groupings (cancer vs not, etc.)
-
-```{r include=FALSE}
-if (!require("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-
-BiocManager::install("ComplexHeatmap")
-```
-
-```{r}
-#transpose expression_df so it can merge
-#extract only the Gene column from data
-transposed <- expression_df
-transposed <- t(transposed)
-transposed <- as.data.frame(transposed)
-transposed <- transposed %>%
-  tibble::rownames_to_column("Code")
-transposed <- transposed[-1,]
-```
-
-```{r}
-#rename ascession_code in copy of metadata to "Code" for merge to work, and cull unneeded columns
-metadata_test <- metadata
-names(metadata_test)[names(metadata_test) == "refinebio_accession_code"] <- "Code"
-merge_filter = metadata_test[,c("Code","refinebio_subject")]
-
-#merge culled metadata with transposed
-merged <- merge(transposed,merge_filter,by="Code")
-```
-
-```{r include=FALSE}
-#extract ONLY significantly expressed genes
-deseq_df_enr <- readr::read_tsv(file.path(results_dir, "diff_expr_results.tsv"))
-deseq_df_enr<-deseq_df_enr[(deseq_df_enr$threshold==TRUE),]
-
-merged <- merged[,c("refinebio_subject", deseq_df_enr$Gene)]
-```
-
-```{r include=FALSE}
-#group by refinebio subject
-new_merged <- aggregate(merged, list(merged$refinebio_subject), FUN=mean)
-new_merged <- new_merged[order(new_merged$Group.1),]
-new_merged <- new_merged[-c(2)] %>% 
-  column_to_rownames(var="Group.1")
-
-row_names_df_to_remove<-c("pancreatic islets")
-new_merged <- new_merged[!(row.names(new_merged) %in% row_names_df_to_remove),]
-```
-
-```{r}
-
-#heatmap
-
-ht = ComplexHeatmap::Heatmap(new_merged,heatmap_legend_param = list(
-        title = "Expression", at = c(0, 50, 100,150)
-    ),column_title = "Significantly Differentially Expressed Genes Heatmap",show_column_names = FALSE,cluster_columns = FALSE,cluster_rows = FALSE)
-ComplexHeatmap::draw(ht)
-```
-
-⭐️[Heatmap created using ComplexHeatmap showing the differentially
-expressed genes. Side bar added that shows samples groups (cancer vs
-not).]{.underline}
-
-### HEATMAP SUMMARY:
-
-[To create this Heatmap, we used ComplexHeatmap and simply aligned our
-raw data with the significantly expressed gene table, then fed in only
-the significantly expressed gene data to ComplexHeatmap. We also grouped
-this data by the subject, with "non t2d" denoting a subject without Type
-2 Diabetes and "t2d" denoting a subject with diabetes. We found that
-ComplexHeatmap's default settings clustered the rows and columns so that
-they appeared in a different order than how they appear in the input
-table. To fix this, we set cluster to FALSE for both rows and
-columns.]{.underline}
-
-[Based on this heatmap from our significantly expressed gene data, there
-does appear to be some degree of difference between how certain groups
-of genes are expressed across the subjects with diabetes and those
-without. Interestingly, there appear to be differences in how diabetes
-is expressed within the diabetes groups, with subjects 1,2, and 3
-differing from subjects 4,5, and 6. A similar division within the
-non-diabetes group, if it exists, does not appear to be quite as
-apparent.]{.underline}
-
-### 5. Run enrichment analysis on your data using your selected method and ontology
-
-Extract the list of deferentially expressed genes and run enrichment
-analysis.
-
-```{r include=FALSE}
-#Extracting differentially expressed genes:
-deseq_df_enr <- readr::read_tsv(file.path(results_dir, "diff_expr_results.tsv"))
-deseq_df_enr<-deseq_df_enr[(deseq_df_enr$threshold==TRUE),]
-
-readr::write_tsv(
-  deseq_df_enr,
-  file.path(
-    results_dir,
-    "diff_expr_results_enr.tsv" # Replace with a relevant output file name
-  )
-)
-```
-
-Each student in your team should run a different method OR ontology
-(e.g., if there are 4 students on the team, there should be results for
-4 applications in your assignment writeup).
-
--   Choose a method:
-
-    -   gProfiler2
-
-[We have opted to use gprofiler2 to avoid the challenges associated with
-writing R and manipulating our already conclusive data. All three of us
-are exploring three different ontologies: Biological pathways (<GO:BP>),
-Molecular Function (<GO:MF>), and Cellular Components (<GO:CC>). The
-above code isolates only statistically significant genes which we can
-then paste into gprofiler/gost. Seeing as part 5 contains no further
-instructions, see part 6 for corresponding write up.]{.underline}
-
-### 6. Create a table of the enriched processes found for each method in step 4 (one table per method). Create a table showing statistically significantly enriched terms and any characteristics shared by the method you used (e.g., q-value, p-value, log fold change)
-
-![](https://cdn.discordapp.com/attachments/1148297410318176256/1156772921298124830/gProfiler_hsapiens_2023-09-28_01-39-56.png)
-
-⭐️ method/ontology pair per student, table for each method/ontology pair
-with enriched terms (GO, msigDB, etc)
-
-[(gost - Biological Pathways, gost - Molecular Function, gost - Cellular
-Components)]{.underline}
-
-[The above table was produced using gost, an online tool that attempts
-to display genes clustered by various ontologies, ontologies being such
-significance as the molecule to which they contribute, regulatory
-effects they perform, or relationship with a disease among other
-categories.]{.underline}
-
-![](https://media.discordapp.net/attachments/1148297410318176256/1157136634630914088/image.png?ex=651782f8&is=65163178&hm=d2169b4059aa2d790085602ebe26e99871f8838137e09a8539b807cd954dce10)
-
-[Of most signficance is cytoplasmic relationship within particularly the
-<GO:CC> table. We can see a very significant P value here of
-1.324x10\^-14, which is seemingly reasonable since diabetes would
-influence certain metabolic pathways naturally present in the cytoplasm,
-or so we would assume from the results. This lead to a further
-exploration on google scholar, which lead to [this
-paper.](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8115730/),
-suggesting that NADPH is depleted and lipogenesis from glucose dampened
-as a consequence of T2D in pancreatic islet cells. We can also see that
-functions relating to vesicles are affected, which falls in line with
-the paper's suggestion that secretion is hampered (note the secretory
-vesicle , around halfway down in terms of significance).]{.underline}
-
-![](https://media.discordapp.net/attachments/1148297410318176256/1157136583170990101/image.png?ex=651782eb&is=6516316b&hm=8aeebd2dd26d4821c6261d2d69e83c867157e9603f4e7ba4992e0f773dc64210.png)
-
-[Biological quality regulation was also closely tied to the differential
-expression of our genes, under the biological pathway ontology. This too
-is somewhat unsurprising, given this disease might be tied to
-underperformant pancreatic islet cells. Particularly the relation to
-"amide metabolic process" is more specific than the other points noted
-in the table, and prompted some investigation. [This
-paper](https://pubmed.ncbi.nlm.nih.gov/9421375/) seems to connect amides
-(which we recognize are just a molecular component) to insulin
-secretion, which confirms some of the findings from the cellular
-component ontological exploration above.]{.underline}
-
-![](https://media.discordapp.net/attachments/1148297410318176256/1157136538736529478/image.png?ex=651782e1&is=65163161&hm=a55dd1f1c74a8a45059a5707572a53639b89814596be219b20d76718aa27f9e5)
-
-[Finally we see a connection to protein binding and phosphoric diester
-hydrolase activity within the molecular function ontology. This is
-intriguing as it may relate to insulin receptors' capacity to bind free
-glucose, though it is our understanding that this is a fundamental
-quality not only of pancreatic islet cells but of all somatic cells
-participating in metabolism. Instead we explore phosphoric diester
-hydrolase activity in an effort to supplement our understanding: It
-turns out that phsophate diester hydrolases are closely tied to cAMP
-regulation which we know from AP Biology regulates the cell cycle in
-some capacity. When searching specifically for a connection to
-pancreatic islets however, we find [the following
-paper](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5587329/#:~:text=In%20addition%20to,conjugation%20with%20glutathione.)
-which seems to suggest a connection to type 1 diabetes in which this
-very class of enzyme's downregulation contributes to oxidative stress
-and general disfunction.]{.underline}
-
-### 7. Write a short summary to go with each plot/table you create. Describe what you did, what parameters you used (if any) and an interesting result from it.
-
-⭐️Done throughout.
-
-⭐️ As a team, fill out the team evaluation table below.
-
-![im1](https://cdn.discordapp.com/attachments/1148297410318176256/1156784591059816558/image.png)
-
-### 8. Combine all into a single file and submit on Canvas. Make sure that all your code is added to your GitHub repository. ✅
-
-[Github Link](https://github.com/Skunkmeister/CGS4144-Team12)
+    ✅
