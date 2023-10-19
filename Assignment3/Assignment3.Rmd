@@ -653,22 +653,18 @@ we're usually trying to capture in bioinformatics).
         3.  [**Include a legend and axis labels**]{.underline}
         4.  [**Include row and column dendrograms**]{.underline}
 
-#3 K-Means Heatmap
+#3 Gene Heatmap
 
-#for this, we need to also have the sample groupings (diabetic,
-non-diabetic AND pancreatic islets because we have to have all 5,000
-genes)
-
-#i am confused
 
 ```{r}
-mat_100<- data.matrix(copy_100,rownames.force = FALSE)
+mat_100<- data.matrix(top_5000,rownames.force = FALSE)
 ht = ComplexHeatmap::Heatmap(mat_100,heatmap_legend_param = list(
         title = "Expression", at = c(0, 50, 100,150)
     ),column_title = "Clustered Genes",show_column_names = FALSE,cluster_columns = TRUE,cluster_rows = TRUE)
 ComplexHeatmap::draw(ht)
 
 ```
+To generate the above heatmap, we utilized the ComplexHeatmap library again using the top 5,000 genes as instructed. We provided a legend based on gene expression, and to cluster the genes within the heatmap, we set the cluster_columns and cluster_rows parameters to "TRUE". This also displays the dendrograms for the rows and columns. Unfortunately, we were unable to cluster the heatmap according to the clusters we determined in earlier sections of the assignment, and so were unable to annotate sections for said columns. While clusters data do clearly exist, the heatmap unfortunately does not clearly reflect this fact.
 
 4.  [**Statistics**]{.underline}
 
