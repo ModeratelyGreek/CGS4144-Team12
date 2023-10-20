@@ -172,7 +172,7 @@ expression_df$row_variance <- row_variances
 expression_df <- expression_df[order(row_variances, decreasing = TRUE), ]
 
 # Remove the row variance columns
-expression_df$row_variances <- NULL
+expression_df <- select(expression_df, -row_variance)
 
 # Keep quantities mentioned in part E
 top_10 <- head(expression_df, 10)
@@ -622,7 +622,7 @@ score, which is excellent. The X axis is individual samples though I've
 removed the label to keep things clean!
 
 ```{r}
-pam_result_5000_five <- pam(top_5000m, k = 5)
+pam_result_5000_five <- pam(top_5000m, k = 2)
 fviz_silhouette(pam_result_5000_five, label=FALSE)
 ```
 
@@ -742,10 +742,10 @@ exist, the heatmap unfortunately does not clearly reflect this fact.
         "KMEANS_K5_N5000" = kmeans_result_5000_five$cluster,
         "KMEANS_K4_N5000" = kmeans_result_5000_four$cluster,
         "KMEANS_K3_N5000" = kmeans_result_5000_three$cluster,
-        "HCLUSTER_K5_N10" = hcluster_result_10_five,
-        "HCLUSTER_K4_N10" = hcluster_result_10_four,
-        "HCLUSTER_K3_N10" = hcluster_result_10_three,
-        "HCLUSTER_K2_N10" = hcluster_result_10_two,
+        "HCLUSTER_K5_N100" = hcluster_result_100_five,
+        "HCLUSTER_K4_N100" = hcluster_result_100_four,
+        "HCLUSTER_K3_N100" = hcluster_result_100_three,
+        "HCLUSTER_K2_N100" = hcluster_result_100_two,
         "HCLUSTER_K5_N10000" = hcluster_result_10000_five,
         "HCLUSTER_K4_N10000" = hcluster_result_10000_four,
         "HCLUSTER_K3_N10000" = hcluster_result_10000_three,
@@ -753,42 +753,15 @@ exist, the heatmap unfortunately does not clearly reflect this fact.
         "HCLUSTER_K4_N5000" = hcluster_result_5000_four,
         "HCLUSTER_K3_N5000" = hcluster_result_5000_three,
         "HCLUSTER_K2_N5000" = hcluster_result_5000_two,
-        "HCLUSTER_K1_N5000" = hcluster_result_5000_one,
-        "PAM_K3_N10" = pam_result_10_three,
-        "PAM_K3_N100" = pam_result_100_three,
-        "PAM_K3_N1000" = pam_result_1000_three,
-        "PAM_K3_N10000" = pam_result_10000_three,
-        "PAM_K2_N5000" = pam_result_5000_two,
-        "PAM_K3_N5000" = pam_result_5000_three,
-        "PAM_K4_N5000" = pam_result_5000_four,
-        "PAM_K5_N5000" = pam_result_5000_five,
-        "PAM_K6_N5000" = pam_result_5000_six,
+        "PAM_K3_N10" = pam_result_10_three$clustering,
+        "PAM_K3_N100" = pam_result_100_three$clustering,
+        "PAM_K3_N1000" = pam_result_1000_three$clustering,
+        "PAM_K3_N10000" = pam_result_10000_three$clustering,
+        "PAM_K3_N5000" = pam_result_5000_three$clustering,
+        "PAM_K4_N5000" = pam_result_5000_four$clustering,
+        "PAM_K5_N5000" = pam_result_5000_five$clustering,
+        "PAM_K6_N5000" = pam_result_5000_six$clustering
     )
-
-    new_expression_df <- readr::read_tsv(data_file) %>%
-      tibble::column_to_rownames("Gene")
-
-    metadata <- metadata %>%
-      dplyr::mutate(diabetes = dplyr::case_when(
-        stringr::str_detect(refinebio_subject, "non t2d") ~ "reference",
-        stringr::str_detect(refinebio_subject, "t2d") ~ "diabetic",
-      ))
-
-    #Remove ambiguously-labeled samples from metadata
-    culledMeta <- metadata[!(metadata$refinebio_subject=="pancreatic islets"),]
-
-    discardColumns <- metadata[(metadata$refinebio_subject=="pancreatic islets"),]
-    discardColumns = as.vector(discardColumns$refinebio_accession_code)
-    length(discardColumns)
-    #Preserve only columns in expression_df that match one of the accession ids
-    culled_expression_df = new_expression_df[,!(names(new_expression_df) %in% discardColumns)]
-
-    # Make mutation_status a factor and set the levels appropriately
-    culledMeta <- culledMeta %>%
-      dplyr::mutate(
-        # Here we define the values our factor variable can have and their order.
-        diabetes = factor(diabetes, levels = c("reference", "diabetic"))
-      )
     ```
 
     Now we need to trim our "culledMeta" to only the columns we care
@@ -802,12 +775,47 @@ exist, the heatmap unfortunately does not clearly reflect this fact.
         stringr::str_detect(diabetes, "reference") ~ 0,
         stringr::str_detect(diabetes, "diabetic") ~ 1,
       ))
+
+    reference_group <- referenceGroup$diabetes
     ```
 
     ```{r}
+    results_df <- data.frame(
+      Name = character(),
+      X_Squared = numeric(),
+      Degrees_of_Freedom = integer(),
+      P_Value_Adjusted = numeric(),
+      stringsAsFactors = FALSE
+    )
+
+    # Loop through each matrix and perform the chi-squared test
+    for(name in names(clusterResults)) {
+      test_result <- chisq.test(clusterResults[[name]])
+      x_squared <- ifelse(is.null(test_result$statistic), 0, test_result$statistic)
+      df <- ifelse(is.null(test_result$parameter), 0, test_result$parameter)
+      p_value <- ifelse(is.null(test_result$p.value), -1, p.adjust(test_result$p.value))
+      
+      temp_df <- data.frame(
+        Name = name,
+        X_Squared = x_squared,
+        Degrees_of_Freedom = df,
+        P_Value_Adjusted = p_value
+      )
+      
+      results_df <- rbind(results_df, temp_df)
+    }
+
+    # View the results dataframe
+    print(results_df)
+
+
     for (name in names(clusterResults)) {
-        tbl <- table(results[[name]], reference_group)
-        test <- p.adjust(chisq.test(tbl)$pval)
+        tbl <- table(clusterResults[[name]], reference_group)
+        test <- chisq.test(tbl)
+        test$p.value <- p.adjust(test$p.value)
+        cat("Result for", name, ":\n")
+        print(test)
+        cat("\n-------------------------------\n")
     }
     ```
 
