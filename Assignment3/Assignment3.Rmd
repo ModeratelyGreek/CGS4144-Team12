@@ -100,11 +100,34 @@ file.exists(data_file)
 file.exists(metadata_file)
 ```
 
+Below we read in the data but we also take additional measures to trim
+out ambiguously-labeled samples to give clusters a better chance at
+lining up with our diseased/not-diseased groupings in the final
+statistics step.
+
 ```{r include=FALSE}
 # Read in data and metadata TSV file and make Gene column into row names
 metadata <- readr::read_tsv(metadata_file)
-expression_df <- readr::read_tsv(data_file) %>%
+new_expression_df <- readr::read_tsv(data_file) %>%
   tibble::column_to_rownames("Gene")
+
+metadata <- metadata %>%
+  dplyr::mutate(diabetes = dplyr::case_when(
+    stringr::str_detect(refinebio_subject, "non t2d") ~ "reference",
+    stringr::str_detect(refinebio_subject, "t2d") ~ "diabetic",
+  ))
+
+#Remove ambiguously-labeled samples from metadata
+culledMeta <- metadata[!(metadata$refinebio_subject=="pancreatic islets"),]
+
+discardColumns <- metadata[(metadata$refinebio_subject=="pancreatic islets"),]
+discardColumns = as.vector(discardColumns$refinebio_accession_code)
+length(discardColumns)
+#Preserve only columns in expression_df that match one of the accession ids
+culled_expression_df = new_expression_df[,!(names(new_expression_df) %in% discardColumns)]
+
+#expression_df <- as.data.frame(t(culled_expression_df))
+expression_df <- culled_expression_df
 ```
 
 1.  [**Unsupervised Analysis**]{.underline}
@@ -187,10 +210,10 @@ fviz_nbclust(top_5000, kmeans, k.max = 6, method = "wss")
 
 The elbow method visualized above reruns K-Means with different amounts
 of clusters and visualizes how "Total within sum of square" decreases.
-This "within sum of square" metric explains proximity of points to
-their centroid. Lower values mean tighter groupings. The elbow method
-means we look for where the elbow in the curve occurs, picking a number
-of clusters K that does not overfit the data, but also provides a
+This "within sum of square" metric explains proximity of points to their
+centroid. Lower values mean tighter groupings. The elbow method means we
+look for where the elbow in the curve occurs, picking a number of
+clusters K that does not overfit the data, but also provides a
 significant reduction in WSS compared to K-1 clusters. Here we choose 3
 as optimal.
 
@@ -203,13 +226,12 @@ kmeans_result_5000_five <- kmeans(top_5000,5,iter.max = 10, nstart = 25)
 ```
 
 ```{r}
-
+#Used to extract much of the information below, but too lengthy to include.
 #print(kmeans_result_5000_three)
 #print(kmeans_result_5000_four)
 #print(kmeans_result_5000_five)
 
 ```
-
 
 ```{r}
 #About 30 seconds
@@ -218,7 +240,7 @@ fviz_cluster(kmeans_result_5000_three, data = top_5000, geom="point")
 
 Above we can see how these 3 clusters look when displayed in a 2D graph
 via PCA. This is a healthy "sanity-check" indicating our choice to use
-four clusters (per elbow method) is indeed acceptable. We do note that 
+four clusters (per elbow method) is indeed acceptable. We do note that
 the graph does appear to show overlap between these three c
 
 [**If you ran a method that requires you to select the number of
@@ -237,17 +259,20 @@ Cluster membership at 3, 4, and 5 was:
 
 3 - 843, 493, 265
 
-4 - 591, 491, 308, 211  
+4 - 591, 491, 308, 211
 
 5 - 491, 370, 299, 243, 198,
 
-At a k of 3, reduction in sum of squares was 4.9%, and at a k
-of 4, it rose only slightly to 5.5 %. At a k of 5, this rises only slightly to 5.9 %. 
-These results confirm the results of the fviz_nbclust command, showing that there are
-diminishing returns in reduction in sum of squares as the number of clusters increases.
-By looking at cluster membership at k = 3,4, and 5 we can see that cluster membership does not change
-drastically between 3 and 4, as it is the largest cluster that ends up splitting to form the fourth cluster.
-Meanwhile, between a k of 4 and 5, the new cluster takes away members from other clusters, not just the largest.
+At a k of 3, reduction in sum of squares was 4.9%, and at a k of 4, it
+rose only slightly to 5.5 %. At a k of 5, this rises only slightly to
+5.9 %. These results confirm the results of the fviz_nbclust command,
+showing that there are diminishing returns in reduction in sum of
+squares as the number of clusters increases. By looking at cluster
+membership at k = 3,4, and 5 we can see that cluster membership does not
+change drastically between 3 and 4, as it is the largest cluster that
+ends up splitting to form the fourth cluster. Meanwhile, between a k of
+4 and 5, the new cluster takes away members from other clusters, not
+just the largest.
 
 ```{r}
 # rerun K-Means clustering method with different number of genes AND K values for the alluvial down the line
@@ -263,14 +288,11 @@ kmeans_result_1000_five <- kmeans(top_1000,5,iter.max = 10,nstart=25)
 kmeans_result_10000_three <- kmeans(top_10000,3,iter.max = 10,nstart=25)
 kmeans_result_10000_four <- kmeans(top_10000,4,iter.max = 10,nstart=25)
 kmeans_result_10000_five <- kmeans(top_10000,5,iter.max = 10,nstart=25)
-
 ```
 
 ```{r}
-
-print(kmeans_result_10000_three)
+#print(kmeans_result_10000_three)
 ```
-
 
 [**How did the number of genes affect clustering?**]{.underline}
 
@@ -282,15 +304,15 @@ Cluster Membership at 10, 100, 1000, and 10,000 (with a k of 3) was:
 
 1000 - 797, 500, 304
 
-10,000 - 852,  492, 257
+10,000 - 852, 492, 257
 
 Looking solely at cluster membership, it appears that each time the
-number of genes increased, membership in the largest cluster steadily increased while
-membership in the other clusters varyingly decreased and increased. 
-As the number of genes increased, a reduction in sum of squares at a k of 3 was
-calculated as 34.8 %, 11.9 %, 7.5 %, and 4.2 % at 10, 100, 1,000, and 10,000, 
-respectively. As the number of genes increased, the reduction in sum of squares
-greatly decreased as well.
+number of genes increased, membership in the largest cluster steadily
+increased while membership in the other clusters varyingly decreased and
+increased. As the number of genes increased, a reduction in sum of
+squares at a k of 3 was calculated as 34.8 %, 11.9 %, 7.5 %, and 4.2 %
+at 10, 100, 1,000, and 10,000, respectively. As the number of genes
+increased, the reduction in sum of squares greatly decreased as well.
 
 ```{r}
 alluvialData <- data.frame(
@@ -306,8 +328,8 @@ ggplot(data = alluvialData, aes(axis1 = K3, axis2 = K4, axis3 = K5)) +
   labs(title = "KMeans for 10 Samples at K=3,4,5")
 ```
 
-The first of the alluvial plots here shows only 10 samples worth of
-data. We can see how the samples in cluster 1 bifurcate early, while the
+The first of the alluvial plots here shows only 10 genes worth of data.
+We can see how the samples in cluster 1 bifurcate early, while the
 samples of cluster 2 at K=4 column bifurcate into groups 3 and 5 at K=5.
 Nothing overwhelmingly insightful here, but lets see what happens with
 more genes.
@@ -329,11 +351,12 @@ ggplot(data = alluvialData, aes(axis1 = K3, axis2 = K4, axis3 = K5)) +
 
 Things get more complicated with more genes. We can see the pattern of
 bifurcations appears to be significantly different although of some
-intrigue is the relatively robust group 3 chosen at K=3 which seems to
-barely bifurcate at all (a small fraction goes to group 2). Perhaps this
-group is the mostly tightly, whereas clearly the grey bands of group 1
-from K3 are going many places indicating it was a poor discriminant and
-likely of lesser significance.
+intrigue is the relatively robust group 2 chosen at K=3 (first column)
+which seems to barely bifurcate at all (a small fraction goes to group 2
+at K=5, last column). Perhaps this group is the mostly tight, whereas
+clearly the grey bands of group 1 from K3 (again, first column) are
+going many places indicating it was a poor discriminant and likely of
+lesser significance.
 
 ```{r}
 alluvialData <- data.frame(
@@ -454,20 +477,20 @@ alluvials at 10 genes and 10,000 genes but with more divisions (you're
 more or less looking at a horizontal dendrogram...)
 
 ```{r}
-hcluster_result_10_two <- cutree(hclusterTop10, k = 2)
-hcluster_result_10_three <- cutree(hclusterTop10, k = 3)
-hcluster_result_10_four <- cutree(hclusterTop10, k = 4)
-hcluster_result_10_five <- cutree(hclusterTop10, k = 5)
+hcluster_result_100_two <- cutree(hclusterTop100, k = 2)
+hcluster_result_100_three <- cutree(hclusterTop100, k = 3)
+hcluster_result_100_four <- cutree(hclusterTop100, k = 4)
+hcluster_result_100_five <- cutree(hclusterTop100, k = 5)
 hcluster_result_10000_two <- cutree(hclusterTop10000, k = 2)
 hcluster_result_10000_three <- cutree(hclusterTop10000, k = 3)
 hcluster_result_10000_four <- cutree(hclusterTop10000, k = 4)
 hcluster_result_10000_five <- cutree(hclusterTop10000, k = 5)
 
 alluvial_data <- data.frame(
-  K2 = hcluster_result_10_two,
-  K3 = hcluster_result_10_three,
-  K4 = hcluster_result_10_four,
-  K5 = hcluster_result_10_five
+  K2 = hcluster_result_100_two,
+  K3 = hcluster_result_100_three,
+  K4 = hcluster_result_100_four,
+  K5 = hcluster_result_100_five
 )
 
 ggplot(data = alluvial_data, aes(axis1 = K2, axis2 = K3, axis3 = K4, axis4 = K5)) +
@@ -620,7 +643,6 @@ many K values as we already computed these above.
 top_5000G <- top_5000 %>%
   tibble::rownames_to_column("Gene")
 alluvialData <- data.frame(
-  K2 = pam_result_5000_two$clustering, 
   K3 = pam_result_5000_three$clustering, 
   K4 = pam_result_5000_four$clustering,
   K5 = pam_result_5000_five$clustering,
@@ -629,7 +651,7 @@ alluvialData <- data.frame(
 
 ggplot(
   data = alluvialData, 
-  aes(axis1 = K2, axis2 = K3, axis3 = K4, axis4 = K5, axis5 = K6)
+  aes(axis1 = K3, axis2 = K4, axis3 = K5, axis4 = K6, axis5 = K6)
 ) +
   geom_alluvium(aes(fill = K6)) +
   geom_stratum() +
@@ -637,7 +659,7 @@ ggplot(
   theme_classic() +
   xlab("Amount of Clusters") +
   ylab("Gene Index") +
-  labs(title = "PAM for 5000 Samples at K=2,3,4,5,6")
+  labs(title = "PAM for 5000 Samples at K=3,4,5,6")
 ```
 
 Nasty. We can see the monolithic cluster squeezing the other groups
@@ -767,9 +789,17 @@ exist, the heatmap unfortunately does not clearly reflect this fact.
         # Here we define the values our factor variable can have and their order.
         diabetes = factor(diabetes, levels = c("reference", "diabetic"))
       )
+    ```
 
+    Now we need to trim our "culledMeta" to only the columns we care
+    about. We also need to trim all of our data in list, such that the
+    ambiguously labeled "pancreatic islet" samples are removed.
 
+    ```{r}
+    #
+    ```
 
+    ```{r}
     for (name in names(clusterResults)) {
         tbl <- table(results[[name]], reference_group)
         test <- p.adjust(chisq.test(tbl)$pval)
