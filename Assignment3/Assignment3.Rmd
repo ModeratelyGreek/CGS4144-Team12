@@ -792,11 +792,16 @@ exist, the heatmap unfortunately does not clearly reflect this fact.
     ```
 
     Now we need to trim our "culledMeta" to only the columns we care
-    about. We also need to trim all of our data in list, such that the
-    ambiguously labeled "pancreatic islet" samples are removed.
+    about: accession code, and diabetic vs nondiabetic.
 
     ```{r}
     #
+    referenceGroup <- subset(culledMeta, select = c("refinebio_accession_code", "diabetes"))
+    referenceGroup <- referenceGroup %>%
+      dplyr::mutate(diabetes = dplyr::case_when(
+        stringr::str_detect(diabetes, "reference") ~ 0,
+        stringr::str_detect(diabetes, "diabetic") ~ 1,
+      ))
     ```
 
     ```{r}
