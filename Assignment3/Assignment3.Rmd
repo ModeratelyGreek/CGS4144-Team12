@@ -1,9 +1,9 @@
 ---
 title: "Assignment 3 R Notebook"
 output:
-  pdf_document: default
   html_document:
     df_print: paged
+  pdf_document: default
   word_document: default
 editor_options:
   markdown:
@@ -168,10 +168,10 @@ expression_df <- culled_expression_df
 row_variances <- apply(expression_df, 1, mad)
 expression_df$row_variance <- row_variances
 
-# Sort by row variance
+# Sort by variability
 expression_df <- expression_df[order(row_variances, decreasing = TRUE), ]
 
-# Remove the row variance columns
+# Remove the row variance column
 expression_df <- select(expression_df, -row_variance)
 
 # Keep quantities mentioned in part E
@@ -181,6 +181,7 @@ top_1000 <- head(expression_df, 1000)
 top_5000 <- head(expression_df, 5000)
 top_10000 <- head(expression_df, 10000)
 
+# Transpose to cluster samples, not genes
 top_10 <- as.data.frame(t(top_10))
 top_100 <- as.data.frame(t(top_100))
 top_1000 <- as.data.frame(t(top_1000))
@@ -193,7 +194,7 @@ top_10000 <- as.data.frame(t(top_10000))
 ## Rayyan - K-means
 
 ```{r INCLUDE=FALSE}
-# compute ideal K for K-means clustering using the "elbow method" 
+# visualize ideal K for K-means clustering using the elbow method on within-sum-squares metric
 
 if(!require("purrr"))
   install.packages("purrr")
@@ -205,7 +206,7 @@ set.seed(123)
 #Expect a delay, takes a bit
 fviz_nbclust(top_5000, kmeans, k.max = 6, method = "wss")
 
-# using the elbow method, the optimal number of clusters appears to be 3
+# using the elbow method, the optimal number of clusters appears to be ~3
 ```
 
 The elbow method visualized above reruns K-Means with different amounts
@@ -219,18 +220,16 @@ as optimal.
 
 ```{r}
 #about 20 seconds
-
 kmeans_result_5000_three <- kmeans(top_5000,3,iter.max = 10, nstart = 25)
 kmeans_result_5000_four <- kmeans(top_5000,4,iter.max = 10, nstart = 25)
 kmeans_result_5000_five <- kmeans(top_5000,5,iter.max = 10, nstart = 25)
 ```
 
-```{r}
+```{r include=FALSE}
 #Used to extract much of the information below, but too lengthy to include.
 #print(kmeans_result_5000_three)
 #print(kmeans_result_5000_four)
 #print(kmeans_result_5000_five)
-
 ```
 
 ```{r}
@@ -693,12 +692,60 @@ we're usually trying to capture in bioinformatics).
 #3 Gene Heatmap
 
 ```{r}
-mat_100<- data.matrix(top_5000,rownames.force = FALSE)
+# Placeholder
+mat_100<- data.matrix(top_1000,rownames.force = FALSE)
 ht = ComplexHeatmap::Heatmap(mat_100,heatmap_legend_param = list(
         title = "Expression", at = c(0, 50, 100,150)
     ),column_title = "Clustered Genes",show_column_names = FALSE,cluster_columns = TRUE,cluster_rows = TRUE)
 ComplexHeatmap::draw(ht)
 
+```
+
+```{r eval=FALSE, include=FALSE}
+# Sahas attempt 1
+# library(pheatmap)
+#     pheatmap(
+#       top_1000,
+#       annotation_col = kmeans_result_1000_five$cluster,
+#       show_rownames = FALSE,
+#       show_colnames = TRUE,
+#       clustering_distance_rows = "euclidean",
+#       clustering_distance_cols = "euclidean",
+#       clustering_method = "complete",
+#       main = "1,000 Most Variable Genes Heatmap"
+#     )
+```
+
+```{r eval=FALSE, include=FALSE}
+# Sahas attempt 2
+# mat_100<-data.matrix(top_1000,rownames.force = FALSE)
+# ht = ComplexHeatmap::Heatmap(
+#   mat_100,
+#   heatmap_legend_param = list(title = "Expression", at = c(0, 50, 100,150)),
+#   column_title = "Clustered Genes",
+#   show_column_names = FALSE,
+#   cluster_columns = TRUE,
+#   cluster_rows = ComplexHeatmap::cluster_within_group(kmeans_result_1000_five$cluster),
+#   referenceGroup
+# )
+# ComplexHeatmap::draw(ht) 
+
+```
+
+```{r}
+#
+# annotation_data <- data.frame(
+#   kmeans100four = as.factor(kmeans_result_100_four$cluster),
+#   kmeans1000five = as.factor(kmeans_result_1000_five$cluster),
+#   ReferenceGroup = as.factor(reference_group)
+# )
+# 
+# pheatmap(
+#   expression_df,
+#   annotation_col = annotation_data,
+#   show_rownames = FALSE,
+#   show_colnames = FALSE
+# )
 ```
 
 To generate the above heatmap, we utilized the ComplexHeatmap library
@@ -788,7 +835,7 @@ exist, the heatmap unfortunately does not clearly reflect this fact.
       stringsAsFactors = FALSE
     )
 
-    # Loop through each matrix and perform the chi-squared test
+    # Loop through each matrix
     for(name in names(clusterResults)) {
       test_result <- chisq.test(clusterResults[[name]])
       x_squared <- ifelse(is.null(test_result$statistic), 0, test_result$statistic)
@@ -805,7 +852,7 @@ exist, the heatmap unfortunately does not clearly reflect this fact.
       results_df <- rbind(results_df, temp_df)
     }
 
-    # View the results dataframe
+
     print(results_df)
 
 
@@ -817,7 +864,16 @@ exist, the heatmap unfortunately does not clearly reflect this fact.
         print(test)
         cat("\n-------------------------------\n")
     }
+
     ```
+
+    These P values are pretty atrocious. It is safe to assume that the
+    groups chosen are indeed independent. This may have to do with the
+    fact that we chose the most variably expressed genes, not the most
+    expressed genes period, which generally picks the genes noisiest
+    accross our samples and thus yields relatively poor clusters (as
+    seen by the oddly low amount of clusters chosen by sillhouette
+    method or the lack of an elbow in the WSS kmeans evaluation).
 
 5.  Write a short summary for each plot/table you created in this
     assignment. In 3-5 sentences for each, describe what you did, what
