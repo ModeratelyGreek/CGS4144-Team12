@@ -157,6 +157,42 @@ top_10000 <- as.data.frame(t(top_10000))
     v. Naïve Bayes
     
     
+
+# K nearest Neighbors ALgorithm
+```{r}
+if(!require("mlr3"))
+  install.packages("mlr3")
+
+#10 genes test of using kknn aka k nearest neighbors algorithm
+
+set.seed(123)  # For reproducibility
+train_indices <- createDataPartition(culledMeta$diabetes, p = 0.7, list = FALSE)
+train_data <- top_10[train_indices, ]
+test_data <- top_10[-train_indices, ]
+train_labels <- culledMeta$diabetes[train_indices]
+#create a task
+kknn_model <- train(
+  x = train_data,
+y = train_labels,
+ method = "kknn",
+trControl = trainControl(method = "cv")
+ )
+
+predictions_Top_10 <- predict(kknn_model, newdata = test_data)
+variable_importance <- varImp(kknn_model)
+gene_Signatures_Top_10 <- rownames(variable_importance$importance)
+
+```
+
+#TODO: 
+#Extract the gene signatures from the model.
+#i. How many genes are in each of the predictive method signatures?
+#ii. How much overlap is there between the signatures?
+```{r}
+gene_Signatures_Top_10
+
+```    
+    
 # Random Forest Supervised Learning Algorithm
 
 # Random Forest Algorithm Top 5000 Most Variable Genes
