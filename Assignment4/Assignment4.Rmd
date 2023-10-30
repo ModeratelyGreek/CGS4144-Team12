@@ -1,0 +1,305 @@
+---
+title: "Assignment 4 R Notebook"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  word_document: default
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+# Assignment 4 - Predictive Modeling
+
+1.  [**Load into R the expression data and matching metadata that you
+    processed in Assignment 2.**]{.underline}
+
+Please insert your data files in the data directory such that the single
+folder from refine.bio containing the metadata TSV and main TSV file are
+present in the immediate subdirectory. This can be downloaded from
+google drive,
+[here!](https://drive.google.com/file/d/1aOnupOgIn-b7rSoGdRflNBvpfQPcR5v5/view?usp=sharing "Download folder to be unzipped as subdirectory of Data!")
+
+This next step loads data and annotation libraries per the instructions,
+but does not attempt to transform our Gene column to the Entrez IDs as
+this was unnecessary for downstream processing.
+
+```{r include=FALSE}
+# Mount requisite libraries, install clustering lib
+library(dplyr)
+library(tidyverse)
+library(readr)
+library(factoextra)
+library(caret)
+if(!require("ggplot2"))
+  install.packages("ggplot2")
+if(!require("ggalluvial"))
+  install.packages("ggalluvial")
+# Create the data folder if it doesn't exist
+if (!dir.exists("data")) {
+  dir.create("data")
+}
+# Define the file path to the plots directory
+plots_dir <- "plots"
+# Create the plots folder if it doesn't exist
+if (!dir.exists(plots_dir)) {
+  dir.create(plots_dir)
+}
+# Define the file path to the results directory
+results_dir <- "results"
+# Create the results folder if it doesn't exist
+if (!dir.exists(results_dir)) {
+  dir.create(results_dir)
+}
+# Define the file path to the data directory
+data_dir <- file.path("data", "SRP075377")
+# Declare the file path to the gene expression matrix file inside directory saved as `data_dir`
+data_file <- file.path(data_dir, "SRP075377.tsv")
+# Declare the file path to the metadata file inside the directory saved as `data_dir`
+metadata_file <- file.path(data_dir, "metadata_SRP075377.tsv")
+# Attach library for pipe (%>%)
+library(magrittr)
+```
+
+```{r}
+# Check that files exist and are usable.
+file.exists(data_file)
+file.exists(metadata_file)
+```
+
+```{r include=FALSE}
+# Read in data and metadata TSV file and make Gene column into row names
+metadata <- readr::read_tsv(metadata_file)
+new_expression_df <- readr::read_tsv(data_file) %>%
+  tibble::column_to_rownames("Gene")
+
+metadata <- metadata %>%
+  dplyr::mutate(diabetes = dplyr::case_when(
+    stringr::str_detect(refinebio_subject, "non t2d") ~ "reference",
+    stringr::str_detect(refinebio_subject, "t2d") ~ "diabetic",
+  ))
+
+#Remove ambiguously-labeled samples from metadata
+culledMeta <- metadata[!(metadata$refinebio_subject=="pancreatic islets"),]
+
+discardColumns <- metadata[(metadata$refinebio_subject=="pancreatic islets"),]
+discardColumns = as.vector(discardColumns$refinebio_accession_code)
+length(discardColumns)
+#Preserve only columns in expression_df that match one of the accession ids
+culled_expression_df = new_expression_df[,!(names(new_expression_df) %in% discardColumns)]
+
+#expression_df <- as.data.frame(t(culled_expression_df))
+expression_df <- culled_expression_df
+```
+
+    ```{r}
+    #
+    referenceGroup <- subset(culledMeta, select = c("refinebio_accession_code", "diabetes"))
+    referenceGroup <- referenceGroup %>%
+      dplyr::mutate(diabetes = dplyr::case_when(
+        stringr::str_detect(diabetes, "reference") ~ 0,
+        stringr::str_detect(diabetes, "diabetic") ~ 1,
+      ))
+
+    reference_group <- referenceGroup$diabetes
+    ```
+
+2. Supervised Analysis
+  a. Subset your data to the 5,000 most variable genes
+  b. Using that subset of the data, select and run an algorithm from this list:
+    i. Support vector machine
+    ii. Logistic regression
+    iii. Random forest
+    iv. K nearest neighbors
+    v. Naïve Bayes
+  c. I recommend using either TidyModels or the mlr3 package. Tutorials:
+    i. https://mlr3.mlr-org.com/
+    ii. https://seandavi.github.io/ITR/machine_learning_mlr3.html
+    iii. https://www.tidymodels.org/start/
+  d. Have the algorithms predict the two groups from assignment 1 (e.g. tumor vs normal)
+  e. Each student in your team should run a different supervised analysis method (e.g., if      there are 4 students on the team, there should be results for 4 predictive methods in      your assignment writeup).
+  f. Extract the gene signatures from the model.
+    i. How many genes are in each of the predictive method signatures?
+    ii. How much overlap is there between the signatures?
+  g. Rerun each predictive method using different numbers of genes. Try 10, 100, 1000, and      10000 genes.
+    i. How did the number of genes affect the results?
+    ii. Are the same genes being included in the models? How much overlap is there between         the signatures?
+    iii. What is the model performance (AUC) for each of the different versions of the              model? Does it increase or decrease as the number of genes included in the model           changes?
+
+# 2A: Subset your data to the 5,000 most variable genes
+
+```{r include=FALSE}
+# Calculate row variance
+row_variances <- apply(expression_df, 1, mad)
+expression_df$row_variance <- row_variances
+# Sort by row variance
+expression_df <- expression_df[order(row_variances, decreasing = TRUE), ]
+# Remove the row variance columns
+expression_df$row_variances <- NULL
+top_5000 <- head(expression_df, 5000)
+top_5000 <- as.data.frame(t(top_5000))
+top_10 <- head(expression_df, 10)
+top_100 <- head(expression_df, 100)
+top_1000 <- head(expression_df, 1000)
+top_10000 <- head(expression_df, 10000)
+top_10 <- as.data.frame(t(top_10))
+top_100 <- as.data.frame(t(top_100))
+top_1000 <- as.data.frame(t(top_1000))
+top_10000 <- as.data.frame(t(top_10000))
+```
+
+# 2B: Using that subset of the data, select and run an algorithm from this list:
+    i. Support vector machine
+    ii. Logistic regression
+    iii. Random forest
+    iv. K nearest neighbors
+    v. Naïve Bayes
+    
+    
+# Random Forest Supervised Learning Algorithm
+
+# Random Forest Algorithm Top 5000 Most Variable Genes
+# ```{r}
+# # Split the data into training and testing sets
+# set.seed(123)  # For reproducibility
+# train_indices <- createDataPartition(culledMeta$diabetes, p = 0.7, list = FALSE)
+# train_data <- top_5000[train_indices, ]
+# test_data <- top_5000[-train_indices, ]
+# train_labels <- culledMeta$diabetes[train_indices]
+#
+# # Train a Random Forest model
+# rf_model <- train(
+#   x = train_data,
+#   y = train_labels,
+#   method = "rf",
+#   trControl = trainControl(method = "cv")
+# )
+#
+# # Make predictions on the test data
+# predictions_Top_5000 <- predict(rf_model, newdata = test_data)
+#
+#
+# # Extract the gene signatures from the Random Forest model.
+# # Extract variable importance
+# variable_importance <- varImp(rf_model)
+#
+# # Get the top important genes
+# gene_Signatures_Top_5000 <- rownames(variable_importance$importance)
+# ```
+
+# Random Forest Algorithm Top 10 Most Variable Genes
+```{r}
+# Split the data into training and testing sets
+set.seed(123)  # For reproducibility
+train_indices <- createDataPartition(culledMeta$diabetes, p = 0.7, list = FALSE)
+train_data <- top_10[train_indices, ]
+test_data <- top_10[-train_indices, ]
+train_labels <- culledMeta$diabetes[train_indices]
+ 
+# Train a Random Forest model
+rf_model <- train(
+  x = train_data,
+  y = train_labels,
+  method = "rf",
+  trControl = trainControl(method = "cv")
+)
+ 
+# Make predictions on the test data
+predictions_Top_10 <- predict(rf_model, newdata = test_data)
+
+
+# Extract the gene signatures from the Random Forest model.
+# Extract variable importance
+variable_importance <- varImp(rf_model)
+
+# Get the top important genes
+gene_Signatures_Top_10 <- rownames(variable_importance$importance)
+```
+
+# Random Forest Algorithm Top 100 Most Variable Genes
+```{r}
+# Split the data into training and testing sets
+set.seed(123)  # For reproducibility
+train_indices <- createDataPartition(culledMeta$diabetes, p = 0.7, list = FALSE)
+train_data <- top_100[train_indices, ]
+test_data <- top_100[-train_indices, ]
+train_labels <- culledMeta$diabetes[train_indices]
+ 
+# Train a Random Forest model
+rf_model <- train(
+  x = train_data,
+  y = train_labels,
+  method = "rf",
+  trControl = trainControl(method = "cv")
+)
+ 
+# Make predictions on the test data
+predictions_Top_100 <- predict(rf_model, newdata = test_data)
+
+
+# Extract the gene signatures from the Random Forest model.
+# Extract variable importance
+variable_importance <- varImp(rf_model)
+
+# Get the top important genes
+gene_Signatures_Top_100 <- rownames(variable_importance$importance)
+```
+
+# Random Forest Algorithm Top 1000 Most Variable Genes
+```{r}
+# Split the data into training and testing sets
+set.seed(123)  # For reproducibility
+train_indices <- createDataPartition(culledMeta$diabetes, p = 0.7, list = FALSE)
+train_data <- top_1000[train_indices, ]
+test_data <- top_1000[-train_indices, ]
+train_labels <- culledMeta$diabetes[train_indices]
+ 
+# Train a Random Forest model
+rf_model <- train(
+  x = train_data,
+  y = train_labels,
+  method = "rf",
+  trControl = trainControl(method = "cv")
+)
+ 
+# Make predictions on the test data
+predictions_Top_1000 <- predict(rf_model, newdata = test_data)
+
+
+# Extract the gene signatures from the Random Forest model.
+# Extract variable importance
+variable_importance <- varImp(rf_model)
+
+# Get the top important genes
+gene_Signatures_Top_1000 <- rownames(variable_importance$importance)
+```
+
+# Random Forest Algorithm Top 10000 Most Variable Genes
+# ```{r}
+# # Split the data into training and testing sets
+# set.seed(123)  # For reproducibility
+# train_indices <- createDataPartition(culledMeta$diabetes, p = 0.7, list = FALSE)
+# train_data <- top_10000[train_indices, ]
+# test_data <- top_10000[-train_indices, ]
+# train_labels <- culledMeta$diabetes[train_indices]
+#  
+# # Train a Random Forest model
+# rf_model <- train(
+#   x = train_data,
+#   y = train_labels,
+#   method = "rf",
+#   trControl = trainControl(method = "cv")
+# )
+#  
+# # Make predictions on the test data
+# predictions_Top_10000 <- predict(rf_model, newdata = test_data)
+# 
+# 
+# # Extract the gene signatures from the Random Forest model.
+# # Extract variable importance
+# variable_importance <- varImp(rf_model)
+# 
+# # Get the top important genes
+# gene_Signatures_Top_10000 <- rownames(variable_importance$importance)
+# ```
