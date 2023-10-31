@@ -26,12 +26,20 @@ but does not attempt to transform our Gene column to the Entrez IDs as
 this was unnecessary for downstream processing.
 
 ```{r include=FALSE}
+# Reproducibility
+set.seed(123) 
+
 # Mount requisite libraries, install clustering lib
 library(dplyr)
 library(tidyverse)
 library(readr)
 library(factoextra)
 library(caret)
+library(mlr3)
+library(mlr3learners)
+library(mlr3tuning)
+library(data.table)
+
 if(!require("ggplot2"))
   install.packages("ggplot2")
 if(!require("ggalluvial"))
@@ -93,17 +101,17 @@ culled_expression_df = new_expression_df[,!(names(new_expression_df) %in% discar
 expression_df <- culled_expression_df
 ```
 
-    ```{r}
-    #
-    referenceGroup <- subset(culledMeta, select = c("refinebio_accession_code", "diabetes"))
-    referenceGroup <- referenceGroup %>%
-      dplyr::mutate(diabetes = dplyr::case_when(
-        stringr::str_detect(diabetes, "reference") ~ 0,
-        stringr::str_detect(diabetes, "diabetic") ~ 1,
-      ))
+```{r}
+#
+referenceGroup <- subset(culledMeta, select = c("refinebio_accession_code", "diabetes"))
+referenceGroup <- referenceGroup %>%
+  dplyr::mutate(diabetes = dplyr::case_when(
+    stringr::str_detect(diabetes, "reference") ~ 0,
+    stringr::str_detect(diabetes, "diabetic") ~ 1,
+  ))
 
-    reference_group <- referenceGroup$diabetes
-    ```
+reference_group <- referenceGroup$diabetes
+```
 
 2. Supervised Analysis
   a. Subset your data to the 5,000 most variable genes
@@ -135,10 +143,13 @@ row_variances <- apply(expression_df, 1, mad)
 expression_df$row_variance <- row_variances
 # Sort by row variance
 expression_df <- expression_df[order(row_variances, decreasing = TRUE), ]
-# Remove the row variance columns
-expression_df$row_variances <- NULL
+
+# Remove the row variance column
+expression_df <- select(expression_df, -row_variance)
+
 top_5000 <- head(expression_df, 5000)
 top_5000 <- as.data.frame(t(top_5000))
+
 top_10 <- head(expression_df, 10)
 top_100 <- head(expression_df, 100)
 top_1000 <- head(expression_df, 1000)
@@ -162,7 +173,6 @@ top_10000 <- as.data.frame(t(top_10000))
 # Random Forest Algorithm Top 5000 Most Variable Genes
 # ```{r}
 # # Split the data into training and testing sets
-# set.seed(123)  # For reproducibility
 # train_indices <- createDataPartition(culledMeta$diabetes, p = 0.7, list = FALSE)
 # train_data <- top_5000[train_indices, ]
 # test_data <- top_5000[-train_indices, ]
@@ -191,7 +201,6 @@ top_10000 <- as.data.frame(t(top_10000))
 # Random Forest Algorithm Top 10 Most Variable Genes
 ```{r}
 # Split the data into training and testing sets
-set.seed(123)  # For reproducibility
 train_indices <- createDataPartition(culledMeta$diabetes, p = 0.7, list = FALSE)
 train_data <- top_10[train_indices, ]
 test_data <- top_10[-train_indices, ]
@@ -208,7 +217,6 @@ rf_model <- train(
 # Make predictions on the test data
 predictions_Top_10 <- predict(rf_model, newdata = test_data)
 
-
 # Extract the gene signatures from the Random Forest model.
 # Extract variable importance
 variable_importance <- varImp(rf_model)
@@ -220,7 +228,6 @@ gene_Signatures_Top_10 <- rownames(variable_importance$importance)
 # Random Forest Algorithm Top 100 Most Variable Genes
 ```{r}
 # Split the data into training and testing sets
-set.seed(123)  # For reproducibility
 train_indices <- createDataPartition(culledMeta$diabetes, p = 0.7, list = FALSE)
 train_data <- top_100[train_indices, ]
 test_data <- top_100[-train_indices, ]
@@ -249,7 +256,6 @@ gene_Signatures_Top_100 <- rownames(variable_importance$importance)
 # Random Forest Algorithm Top 1000 Most Variable Genes
 ```{r}
 # Split the data into training and testing sets
-set.seed(123)  # For reproducibility
 train_indices <- createDataPartition(culledMeta$diabetes, p = 0.7, list = FALSE)
 train_data <- top_1000[train_indices, ]
 test_data <- top_1000[-train_indices, ]
@@ -278,7 +284,6 @@ gene_Signatures_Top_1000 <- rownames(variable_importance$importance)
 # Random Forest Algorithm Top 10000 Most Variable Genes
 # ```{r}
 # # Split the data into training and testing sets
-# set.seed(123)  # For reproducibility
 # train_indices <- createDataPartition(culledMeta$diabetes, p = 0.7, list = FALSE)
 # train_data <- top_10000[train_indices, ]
 # test_data <- top_10000[-train_indices, ]
@@ -303,3 +308,199 @@ gene_Signatures_Top_1000 <- rownames(variable_importance$importance)
 # # Get the top important genes
 # gene_Signatures_Top_10000 <- rownames(variable_importance$importance)
 # ```
+
+```{r}
+#Rip out those pesky rownames, join on that column, then drop the column
+top_10$refinebio_accession_code <- rownames(top_10) 
+top_10_labeled <- merge(top_10, referenceGroup, by = "refinebio_accession_code")
+top_10 <- select(top_10, -refinebio_accession_code)
+rownames(top_10_labeled) <- top_10_labeled$refinebio_accession_code
+top_10_labeled <- select(top_10_labeled, -refinebio_accession_code)
+
+#Turn binary column into a factor
+top_10_labeled$diabetes <- factor(top_10_labeled$diabetes, levels = c(0, 1), labels = c("Non-Diabetic", "Diabetic"))
+
+task <- TaskClassif$new(id = "gene_exp", backend = top_10_labeled, target = "diabetes")
+split = partition(task, ratio = 0.7)
+learner <- lrn("classif.svm", kernel = "linear")
+svm_model <- learner$train(task, split$train)
+predictions <- learner$predict(task, split$test)
+model <- svm_model$model
+
+# Get genes in top weight percentile by percent below:
+gene_weights <- t(model$SV) %*% model$coefs
+threshold <- quantile(abs(gene_weights), 0.50)
+
+# Get the genes by column index
+signature_indices <- which(abs(as.numeric(gene_weights)) > threshold)
+signature_genes_SVM_10_50 <- colnames(top_10_labeled)[signature_indices]
+
+# Get some metrics
+cm = predictions$confusion
+auc = predictions$score(msr("classif.acc"))
+TPR = cm[2,2] / (cm[2,2] + cm[2,1])  # Sensitivity or Recall: TP / (TP + FN)
+FPR = cm[1,2] / (cm[1,2] + cm[1,1])  # False Positive Rate: FP / (FP + TN)
+
+# Spit it all out
+print(auc)
+print(cm)
+cat("True Positive Rate:", TPR, "\n")
+cat("False Positive Rate:", FPR, "\n")
+```
+
+```{r}
+#Rip out those pesky rownames, join on that column, then drop the column
+top_100$refinebio_accession_code <- rownames(top_100) 
+top_100_labeled <- merge(top_100, referenceGroup, by = "refinebio_accession_code")
+top_100 <- select(top_100, -refinebio_accession_code)
+rownames(top_100_labeled) <- top_100_labeled$refinebio_accession_code
+top_100_labeled <- select(top_100_labeled, -refinebio_accession_code)
+
+#Turn binary column into a factor
+top_100_labeled$diabetes <- factor(top_100_labeled$diabetes, levels = c(0, 1), labels = c("Non-Diabetic", "Diabetic"))
+
+task <- TaskClassif$new(id = "gene_exp", backend = top_100_labeled, target = "diabetes")
+split = partition(task, ratio = 0.7)
+learner <- lrn("classif.svm", kernel = "linear")
+svm_model <- learner$train(task, split$train)
+predictions <- learner$predict(task, split$test)
+model <- svm_model$model
+
+# Get genes in top weight percentile by percent below:
+gene_weights <- t(model$SV) %*% model$coefs
+threshold <- quantile(abs(gene_weights), 0.90)
+
+# Get the genes by column index
+signature_indices <- which(abs(as.numeric(gene_weights)) > threshold)
+signature_genes_SVM_100_90 <- colnames(top_100_labeled)[signature_indices]
+
+# Get some metrics
+cm = predictions$confusion
+auc = predictions$score(msr("classif.acc"))
+TPR = cm[2,2] / (cm[2,2] + cm[2,1])  # Sensitivity or Recall: TP / (TP + FN)
+FPR = cm[1,2] / (cm[1,2] + cm[1,1])  # False Positive Rate: FP / (FP + TN)
+
+# Spit it all out
+print(auc)
+print(cm)
+cat("True Positive Rate:", TPR, "\n")
+cat("False Positive Rate:", FPR, "\n")
+```
+
+```{r}
+#Rip out those pesky rownames, join on that column, then drop the column
+top_1000$refinebio_accession_code <- rownames(top_1000) 
+top_1000_labeled <- merge(top_1000, referenceGroup, by = "refinebio_accession_code")
+top_1000 <- select(top_1000, -refinebio_accession_code)
+rownames(top_1000_labeled) <- top_1000_labeled$refinebio_accession_code
+top_1000_labeled <- select(top_1000_labeled, -refinebio_accession_code)
+
+#Turn binary column into a factor
+top_1000_labeled$diabetes <- factor(top_1000_labeled$diabetes, levels = c(0, 1), labels = c("Non-Diabetic", "Diabetic"))
+
+task <- TaskClassif$new(id = "gene_exp", backend = top_1000_labeled, target = "diabetes")
+split = partition(task, ratio = 0.7)
+learner <- lrn("classif.svm", kernel = "linear")
+svm_model <- learner$train(task, split$train)
+predictions <- learner$predict(task, split$test)
+model <- svm_model$model
+
+# Get genes in top weight percentile by percent below:
+gene_weights <- t(model$SV) %*% model$coefs
+threshold <- quantile(abs(gene_weights), 0.99)
+
+# Get the genes by column index
+signature_indices <- which(abs(as.numeric(gene_weights)) > threshold)
+signature_genes_SVM_1000_99 <- colnames(top_1000_labeled)[signature_indices]
+
+# Get some metrics
+cm = predictions$confusion
+auc = predictions$score(msr("classif.acc"))
+TPR = cm[2,2] / (cm[2,2] + cm[2,1])  # Sensitivity or Recall: TP / (TP + FN)
+FPR = cm[1,2] / (cm[1,2] + cm[1,1])  # False Positive Rate: FP / (FP + TN)
+
+# Spit it all out
+print(auc)
+print(cm)
+cat("True Positive Rate:", TPR, "\n")
+cat("False Positive Rate:", FPR, "\n")
+```
+
+```{r}
+#Rip out those pesky rownames, join on that column, then drop the column
+top_5000$refinebio_accession_code <- rownames(top_5000) 
+top_5000_labeled <- merge(top_5000, referenceGroup, by = "refinebio_accession_code")
+top_5000 <- select(top_5000, -refinebio_accession_code)
+rownames(top_5000_labeled) <- top_5000_labeled$refinebio_accession_code
+top_5000_labeled <- select(top_5000_labeled, -refinebio_accession_code)
+
+#Turn binary column into a factor
+top_5000_labeled$diabetes <- factor(top_5000_labeled$diabetes, levels = c(0, 1), labels = c("Non-Diabetic", "Diabetic"))
+
+task <- TaskClassif$new(id = "gene_exp", backend = top_5000_labeled, target = "diabetes")
+split = partition(task, ratio = 0.7)
+learner <- lrn("classif.svm", kernel = "linear")
+svm_model <- learner$train(task, split$train)
+predictions <- learner$predict(task, split$test)
+model <- svm_model$model
+
+# Get genes in top weight percentile by percent below:
+gene_weights <- t(model$SV) %*% model$coefs
+threshold <- quantile(abs(gene_weights), 0.999)
+
+# Get the genes by column index
+signature_indices <- which(abs(as.numeric(gene_weights)) > threshold)
+signature_genes_SVM_5000_999 <- colnames(top_5000_labeled)[signature_indices]
+
+# Get some metrics
+cm = predictions$confusion
+auc = predictions$score(msr("classif.acc"))
+TPR = cm[2,2] / (cm[2,2] + cm[2,1])  # Sensitivity or Recall: TP / (TP + FN)
+FPR = cm[1,2] / (cm[1,2] + cm[1,1])  # False Positive Rate: FP / (FP + TN)
+
+# Spit it all out
+print(auc)
+print(cm)
+cat("True Positive Rate:", TPR, "\n")
+cat("False Positive Rate:", FPR, "\n")
+```
+
+```{r}
+#Rip out those pesky rownames, join on that column, then drop the column
+top_10000$refinebio_accession_code <- rownames(top_10000) 
+top_10000_labeled <- merge(top_10000, referenceGroup, by = "refinebio_accession_code")
+top_10000 <- select(top_10000, -refinebio_accession_code)
+rownames(top_10000_labeled) <- top_10000_labeled$refinebio_accession_code
+top_10000_labeled <- select(top_10000_labeled, -refinebio_accession_code)
+
+#Turn binary column into a factor
+top_10000_labeled$diabetes <- factor(top_10000_labeled$diabetes, levels = c(0, 1), labels = c("Non-Diabetic", "Diabetic"))
+
+task <- TaskClassif$new(id = "gene_exp", backend = top_10000_labeled, target = "diabetes")
+split = partition(task, ratio = 0.7)
+learner <- lrn("classif.svm", kernel = "linear")
+svm_model <- learner$train(task, split$train)
+predictions <- learner$predict(task, split$test)
+model <- svm_model$model
+
+# Get genes in top weight percentile by percent below:
+gene_weights <- t(model$SV) %*% model$coefs
+threshold <- quantile(abs(gene_weights), 0.999)
+
+# Get the genes by column index
+signature_indices <- which(abs(as.numeric(gene_weights)) > threshold)
+signature_genes_SVM_10000_999 <- colnames(top_10000_labeled)[signature_indices]
+
+# Get some metrics
+cm = predictions$confusion
+auc = predictions$score(msr("classif.acc"))
+TPR = cm[2,2] / (cm[2,2] + cm[2,1])  # Sensitivity or Recall: TP / (TP + FN)
+FPR = cm[1,2] / (cm[1,2] + cm[1,1])  # False Positive Rate: FP / (FP + TN)
+
+# Spit it all out
+print(auc)
+print(cm)
+cat("True Positive Rate:", TPR, "\n")
+cat("False Positive Rate:", FPR, "\n")
+```
+Model performance degrades further at 10,000 genes. In order to attempt to correct this I explored various kernels and hyperparameters including RBF, Polynomial, and Sigmoid. None of these improved performance although polynomial with a high coefficient got better results than the others. What we're witnessing here is the "curse of dimensionality" to SVM. It is overfitting to the noise produced by extending the feature vector to include less relevant genes. I also attempted to improve results, particularly the 0 TN FP rate (divide by zero error in AUC calculation) by setting the classifier's class weights to the inverse of their frequency as was recommended in several websites. Unfortunately this did not improve the outcome, and SVM remains victim to overfitting high-dimensional noise.
