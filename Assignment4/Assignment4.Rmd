@@ -196,23 +196,20 @@ conf_matrix
 #GENE SIGNATURE ISNT WORKING???
 #FIX THIS 
 # Get genes in top weight percentile by percent below:
-#gene_weights <- t(model$SV) %*% model$coefs
-#threshold <- quantile(abs(gene_weights), 0.50)
+gene_weights <- t(model$SV) %*% model$coefs
+threshold <- quantile(abs(gene_weights), 0.50)
 
 # Get the genes by column index
-#signature_indices <- which(abs(as.numeric(gene_weights)) > threshold)
-#signature_genes_SVM_10_50 <- colnames(top_10_labeled)[signature_indices]
-
-# Get some metrics
-#conf_matrix
-#measures = msrs(c('classif.acc'))
+signature_indices <- which(abs(as.numeric(gene_weights)) > threshold)
+signature_genes_SVM_10_50 <- colnames(top_10_labeled)[signature_indices]
+signature_genes_SVM_10_50
 
 #CALCULATE CONFUSION MATRIX STUFF HERE
 #since our confusion matrix is flipped and True Positive is based on correct detection of "Non-Diabetic" rather than "Diabetic", we can compute the correct scores by 
 #calculating True Negative Rate and False Negative Rate for TPR (Recall) and FPR
 print(pred_test$score(msr(c("classif.tnr"))))
 print(pred_test$score(msr(c("classif.fnr"))))
-print(pred_test$score(msr(c("classif.acc"))))
+print(pred_test$score(msr(c("classif.auc")))) # AUC not ACC
 
 #raw calculation method that michael used as double check
 #apparently in R these tables are [y,x] ([row,column]) instead of [x,y] ([column, row])
@@ -267,7 +264,7 @@ conf_matrix
 #using these instead of tpr and fpr for reasons detailed above 
 print(pred_test$score(msr(c("classif.tnr"))))
 print(pred_test$score(msr(c("classif.fnr"))))
-print(pred_test$score(msr(c("classif.acc"))))
+print(pred_test$score(msr(c("classic.auc"))))
 TPR = conf_matrix[2,2] / (conf_matrix[2,2] + conf_matrix[1,2])  # Sensitivity or Recall: TP / (TP + FN)
 FPR = conf_matrix[2,1] / (conf_matrix[2,1] + conf_matrix[1,1])  # False Positive Rate: FP / (FP + TN)
 
@@ -315,7 +312,7 @@ conf_matrix
 #using these instead of tpr and fpr for reasons detailed above 
 print(pred_test$score(msr(c("classif.tnr"))))
 print(pred_test$score(msr(c("classif.fnr"))))
-print(pred_test$score(msr(c("classif.acc"))))
+print(pred_test$score(msr(c("classic.auc"))))
 TPR = conf_matrix[2,2] / (conf_matrix[2,2] + conf_matrix[1,2])  # Sensitivity or Recall: TP / (TP + FN)
 FPR = conf_matrix[2,1] / (conf_matrix[2,1] + conf_matrix[1,1])  # False Positive Rate: FP / (FP + TN)
 
@@ -363,7 +360,7 @@ conf_matrix
 #using these instead of tpr and fpr for reasons detailed above 
 print(pred_test$score(msr(c("classif.tnr"))))
 print(pred_test$score(msr(c("classif.fnr"))))
-print(pred_test$score(msr(c("classif.acc"))))
+print(pred_test$score(msr(c("classic.auc"))))
 
 #this is just a manual check to make sure matrix isnt messed up somehow
 TPR = conf_matrix[2,2] / (conf_matrix[2,2] + conf_matrix[1,2])  # Sensitivity or Recall: TP / (TP + FN)
