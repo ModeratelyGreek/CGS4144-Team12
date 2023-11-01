@@ -202,13 +202,7 @@ threshold <- quantile(abs(gene_weights), 0.50)
 # Get the genes by column index
 signature_indices <- which(abs(as.numeric(gene_weights)) > threshold)
 signature_genes_SVM_10_50 <- colnames(top_10_labeled)[signature_indices]
-# Get genes in top weight percentile by percent below:
-gene_weights <- t(model$SV) %*% model$coefs
-threshold <- quantile(abs(gene_weights), 0.90)
-
-# Get the genes by column index
-
-
+signature_genes_SVM_10_50
 #CALCULATE CONFUSION MATRIX STUFF HERE
 #since our confusion matrix is flipped and True Positive is based on correct detection of "Non-Diabetic" rather than "Diabetic", we can compute the correct scores by 
 #calculating True Negative Rate and False Negative Rate for TPR (Recall) and FPR
