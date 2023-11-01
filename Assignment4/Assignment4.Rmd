@@ -192,18 +192,16 @@ pred_test <- learner$predict(task, row_ids=split$test)
 conf_matrix <- pred_test$confusion #confusion matrix of data on test set
 #results from above kindof demonstrate that the model, even on the train set, often misidentifies non-diabetic as diabetic, it is very good as determining the actually diabetic ones though
 conf_matrix
-learner$
 #GENE SIGNATURE ISNT WORKING???
 #FIX THIS 
 # Get genes in top weight percentile by percent below:
-gene_weights <- t(learner$) %*% model$coefs
+gene_weights <- t(learner$model$R) %*% learner$model$coefficients
 threshold <- quantile(abs(gene_weights), 0.50)
-
+print(threshold)
 # Get the genes by column index
 signature_indices <- which(abs(as.numeric(gene_weights)) > threshold)
-signature_genes_LR_10_50 <- colnames(top_10_labeled)[signature_indices]
-#signature_genes_LR_10_50
-
+signature_genes_LR_10_50 <- colnames(top_10_labeled)[signature_indices-1]
+signature_genes_LR_10_50
 
 #CALCULATE CONFUSION MATRIX STUFF HERE
 #since our confusion matrix is flipped and True Positive is based on correct detection of "Non-Diabetic" rather than "Diabetic", we can compute the correct scores by 
@@ -262,12 +260,12 @@ conf_matrix <- pred_test$confusion
 conf_matrix
 
 # Get genes in top weight percentile by percent below:
-gene_weights <- t(learner$model$SV) %*% learner$model$coefs
+gene_weights <- t(learner$model$R) %*% learner$model$coefficients
 threshold <- quantile(abs(gene_weights), 0.90)
 
 # Get the genes by column index
 signature_indices <- which(abs(as.numeric(gene_weights)) > threshold)
-signature_genes_LR_100_99 <- colnames(top_100_labeled)[signature_indices]
+signature_genes_LR_100_99 <- colnames(top_100_labeled)[signature_indices-1]
 
 #using these instead of tpr and fpr for reasons detailed above 
 print(pred_test$score(msr(c("classif.tnr"))))
@@ -322,8 +320,8 @@ gene_weights <- t(learner$model$SV) %*% learner$model$coefs
 threshold <- quantile(abs(gene_weights), 0.99)
 
 # Get the genes by column index
-signature_indices <- which(abs(as.numeric(gene_weights)) > threshold)
-signature_genes_LR_1000_99 <- colnames(top_1000_labeled)[signature_indices]
+gene_weights <- t(learner$model$R) %*% learner$model$coefficients
+signature_genes_LR_1000_99 <- colnames(top_1000_labeled)[signature_indices-1]
 
 #using these instead of tpr and fpr for reasons detailed above 
 print(pred_test$score(msr(c("classif.tnr"))))
@@ -371,12 +369,12 @@ conf_matrix <- pred_test$confusion
 conf_matrix
 
 # Get genes in top weight percentile by percent below:
-gene_weights <- t(learner$model$SV) %*% learner$model$coefs
+gene_weights <- t(learner$model$R) %*% learner$model$coefficients
 threshold <- quantile(abs(gene_weights), 0.99)
 
 # Get the genes by column index
 signature_indices <- which(abs(as.numeric(gene_weights)) > threshold)
-signature_genes_LR_5000_99 <- colnames(top_5000_labeled)[signature_indices]
+signature_genes_LR_5000_99 <- colnames(top_5000_labeled)[signature_indices-1]
 
 #using these instead of tpr and fpr for reasons detailed above 
 print(pred_test$score(msr(c("classif.tnr"))))
@@ -426,12 +424,12 @@ conf_matrix <- pred_test$confusion
 conf_matrix
 
 # Get genes in top weight percentile by percent below:
-gene_weights <- t(learner$model$SV) %*% learner$model$coefs
+gene_weights <- t(learner$model$R) %*% learner$model$coefficients
 threshold <- quantile(abs(gene_weights), 0.999)
 
 # Get the genes by column index
 signature_indices <- which(abs(as.numeric(gene_weights)) > threshold)
-signature_genes_LR_10000_999 <- colnames(top_10000_labeled)[signature_indices]
+signature_genes_LR_10000_999 <- colnames(top_10000_labeled)[signature_indices-1]
 
 #using these instead of tpr and fpr for reasons detailed above 
 print(pred_test$score(msr(c("classif.tnr"))))
