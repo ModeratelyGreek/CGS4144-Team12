@@ -157,6 +157,267 @@ top_10000 <- as.data.frame(t(top_10000))
     v. Naïve Bayes
     
     
+```{r}
+#data wranglign from michael 
+top_10$refinebio_accession_code <- rownames(top_10) 
+top_10_labeled <- merge(top_10, referenceGroup, by = "refinebio_accession_code")
+top_10 <- select(top_10, -refinebio_accession_code)
+rownames(top_10_labeled) <- top_10_labeled$refinebio_accession_code
+top_10_labeled <- select(top_10_labeled, -refinebio_accession_code)
+top_10_labeled$diabetes <- factor(top_10_labeled$diabetes, levels = c(0, 1), labels = c("Non-Diabetic", "Diabetic"))
+
+#create classification task
+task <- TaskClassif$new(
+  "gene_exp",
+  top_10_labeled,
+  "diabetes",
+  positive = NULL,
+  label = NA_character_,
+  extra_args = list()
+)
+#task
+
+#split the data, train model
+split = partition(task, ratio = 0.7)
+learner <- lrn("classif.log_reg") #logistic regression
+learner$train(task, split$train) #train model
+#learner$model # view trained model
+
+pred_train = learner$predict(task, row_ids=split$train)
+pred_test <- learner$predict(task, row_ids=split$test)
+#pred_train$confusion #confusion matrix of data on train set, useless obv but just wanna see
+conf_matrix <- pred_test$confusion #confusion matrix of data on test set
+#results from above kindof demonstrate that the model, even on the train set, often misidentifies non-diabetic as diabetic, it is very good as determining the actually diabetic ones though
+conf_matrix
+
+#GENE SIGNATURE ISNT WORKING???
+#FIX THIS 
+# Get genes in top weight percentile by percent below:
+#gene_weights <- t(model$SV) %*% model$coefs
+#threshold <- quantile(abs(gene_weights), 0.50)
+
+# Get the genes by column index
+#signature_indices <- which(abs(as.numeric(gene_weights)) > threshold)
+#signature_genes_SVM_10_50 <- colnames(top_10_labeled)[signature_indices]
+
+# Get some metrics
+#conf_matrix
+#measures = msrs(c('classif.acc'))
+
+#CALCULATE CONFUSION MATRIX STUFF HERE
+#since our confusion matrix is flipped and True Positive is based on correct detection of "Non-Diabetic" rather than "Diabetic", we can compute the correct scores by 
+#calculating True Negative Rate and False Negative Rate for TPR (Recall) and FPR
+print(pred_test$score(msr(c("classif.tnr"))))
+print(pred_test$score(msr(c("classif.fnr"))))
+
+
+#raw calculation method that michael used as double check
+#apparently in R these tables are [y,x] ([row,column]) instead of [x,y] ([column, row])
+#print(conf_matrix[2,2]) #truth diabetic, response diabetic - True Positive 
+#print(conf_matrix[2,1]) #truth NON, response diabetic - False Positive
+#print(conf_matrix[1,2]) #truth diabetic, response NON - False Negative
+#print(conf_matrix[1,1]) #True Negative 
+
+TPR = conf_matrix[2,2] / (conf_matrix[2,2] + conf_matrix[1,2])  # Sensitivity or Recall: TP / (TP + FN)
+FPR = conf_matrix[2,1] / (conf_matrix[2,1] + conf_matrix[1,1])  # False Positive Rate: FP / (FP + TN)
+
+cat("True Positive Rate:", TPR, "\n")
+cat("False Positive Rate:", FPR, "\n")
+
+
+```
+```{r}
+#ONE HUNDRED LOG REG
+#data wranglign from michael 
+top_100$refinebio_accession_code <- rownames(top_100) 
+top_100_labeled <- merge(top_100, referenceGroup, by = "refinebio_accession_code")
+top_100 <- select(top_100, -refinebio_accession_code)
+rownames(top_100_labeled) <- top_100_labeled$refinebio_accession_code
+top_100_labeled <- select(top_100_labeled, -refinebio_accession_code)
+top_100_labeled$diabetes <- factor(top_100_labeled$diabetes, levels = c(0, 1), labels = c("Non-Diabetic", "Diabetic"))
+
+#create classification task
+task <- TaskClassif$new(
+  "gene_exp",
+  top_100_labeled,
+  "diabetes",
+  positive = NULL,
+  label = NA_character_,
+  extra_args = list()
+)
+#task
+
+#split the data, train model
+split = partition(task, ratio = 0.7)
+learner <- lrn("classif.log_reg") #logistic regression
+learner$train(task, split$train) #train model
+#learner$model # view trained model
+
+pred_train = learner$predict(task, row_ids=split$train)
+pred_test <- learner$predict(task, row_ids=split$test)
+conf_matrix <- pred_test$confusion 
+conf_matrix
+
+#INSERT GENE SIGNATURE STUFF HERE
+#AND HERE TOOMA YBE
+
+#using these instead of tpr and fpr for reasons detailed above 
+print(pred_test$score(msr(c("classif.tnr"))))
+print(pred_test$score(msr(c("classif.fnr"))))
+
+TPR = conf_matrix[2,2] / (conf_matrix[2,2] + conf_matrix[1,2])  # Sensitivity or Recall: TP / (TP + FN)
+FPR = conf_matrix[2,1] / (conf_matrix[2,1] + conf_matrix[1,1])  # False Positive Rate: FP / (FP + TN)
+
+cat("True Positive Rate:", TPR, "\n")
+cat("False Positive Rate:", FPR, "\n")
+
+
+```
+
+```{r}
+#ONE THOUSAND LOG REG
+#data wranglign from michael 
+top_1000$refinebio_accession_code <- rownames(top_1000) 
+top_1000_labeled <- merge(top_1000, referenceGroup, by = "refinebio_accession_code")
+top_1000 <- select(top_1000, -refinebio_accession_code)
+rownames(top_1000_labeled) <- top_1000_labeled$refinebio_accession_code
+top_1000_labeled <- select(top_1000_labeled, -refinebio_accession_code)
+top_1000_labeled$diabetes <- factor(top_1000_labeled$diabetes, levels = c(0, 1), labels = c("Non-Diabetic", "Diabetic"))
+
+#create classification task
+task <- TaskClassif$new(
+  "gene_exp",
+  top_1000_labeled,
+  "diabetes",
+  positive = NULL,
+  label = NA_character_,
+  extra_args = list()
+)
+#task
+
+#split the data, train model
+split = partition(task, ratio = 0.7)
+learner <- lrn("classif.log_reg") #logistic regression
+learner$train(task, split$train) #train model
+#learner$model # view trained model
+
+pred_train = learner$predict(task, row_ids=split$train)
+pred_test <- learner$predict(task, row_ids=split$test)
+conf_matrix <- pred_test$confusion 
+conf_matrix
+
+#INSERT GENE SIGNATURE STUFF HERE
+#AND HERE TOOMA YBE
+
+#using these instead of tpr and fpr for reasons detailed above 
+print(pred_test$score(msr(c("classif.tnr"))))
+print(pred_test$score(msr(c("classif.fnr"))))
+
+TPR = conf_matrix[2,2] / (conf_matrix[2,2] + conf_matrix[1,2])  # Sensitivity or Recall: TP / (TP + FN)
+FPR = conf_matrix[2,1] / (conf_matrix[2,1] + conf_matrix[1,1])  # False Positive Rate: FP / (FP + TN)
+
+cat("True Positive Rate:", TPR, "\n")
+cat("False Positive Rate:", FPR, "\n")
+
+
+```
+
+```{r}
+#FIVE THOUSAND LOG REG
+#data wranglign from michael 
+top_5000$refinebio_accession_code <- rownames(top_5000) 
+top_5000_labeled <- merge(top_5000, referenceGroup, by = "refinebio_accession_code")
+top_5000 <- select(top_5000, -refinebio_accession_code)
+rownames(top_5000_labeled) <- top_5000_labeled$refinebio_accession_code
+top_5000_labeled <- select(top_5000_labeled, -refinebio_accession_code)
+top_5000_labeled$diabetes <- factor(top_5000_labeled$diabetes, levels = c(0, 1), labels = c("Non-Diabetic", "Diabetic"))
+
+#create classification task
+task <- TaskClassif$new(
+  "gene_exp",
+  top_5000_labeled,
+  "diabetes",
+  positive = NULL,
+  label = NA_character_,
+  extra_args = list()
+)
+#task
+
+#split the data, train model
+split = partition(task, ratio = 0.7)
+learner <- lrn("classif.log_reg") #logistic regression
+learner$train(task, split$train) #train model
+#learner$model # view trained model
+
+pred_train = learner$predict(task, row_ids=split$train)
+pred_test <- learner$predict(task, row_ids=split$test)
+conf_matrix <- pred_test$confusion 
+conf_matrix
+
+#INSERT GENE SIGNATURE STUFF HERE
+#AND HERE TOOMA YBE
+
+#using these instead of tpr and fpr for reasons detailed above 
+print(pred_test$score(msr(c("classif.tnr"))))
+print(pred_test$score(msr(c("classif.fnr"))))
+
+TPR = conf_matrix[2,2] / (conf_matrix[2,2] + conf_matrix[1,2])  # Sensitivity or Recall: TP / (TP + FN)
+FPR = conf_matrix[2,1] / (conf_matrix[2,1] + conf_matrix[1,1])  # False Positive Rate: FP / (FP + TN)
+
+cat("True Positive Rate:", TPR, "\n")
+cat("False Positive Rate:", FPR, "\n")
+
+
+```
+
+```{r}
+#TEN THOUSAND LOG REG
+#data wranglign from michael 
+top_5000$refinebio_accession_code <- rownames(top_5000) 
+top_5000_labeled <- merge(top_5000, referenceGroup, by = "refinebio_accession_code")
+top_5000 <- select(top_5000, -refinebio_accession_code)
+rownames(top_5000_labeled) <- top_5000_labeled$refinebio_accession_code
+top_5000_labeled <- select(top_5000_labeled, -refinebio_accession_code)
+top_5000_labeled$diabetes <- factor(top_5000_labeled$diabetes, levels = c(0, 1), labels = c("Non-Diabetic", "Diabetic"))
+
+#create classification task
+task <- TaskClassif$new(
+  "gene_exp",
+  top_5000_labeled,
+  "diabetes",
+  positive = NULL,
+  label = NA_character_,
+  extra_args = list()
+)
+#task
+
+#split the data, train model
+split = partition(task, ratio = 0.7)
+learner <- lrn("classif.log_reg") #logistic regression
+learner$train(task, split$train) #train model
+#learner$model # view trained model
+
+pred_train = learner$predict(task, row_ids=split$train)
+pred_test <- learner$predict(task, row_ids=split$test)
+conf_matrix <- pred_test$confusion 
+conf_matrix
+
+#INSERT GENE SIGNATURE STUFF HERE
+#AND HERE TOOMA YBE
+
+#using these instead of tpr and fpr for reasons detailed above 
+print(pred_test$score(msr(c("classif.tnr"))))
+print(pred_test$score(msr(c("classif.fnr"))))
+
+TPR = conf_matrix[2,2] / (conf_matrix[2,2] + conf_matrix[1,2])  # Sensitivity or Recall: TP / (TP + FN)
+FPR = conf_matrix[2,1] / (conf_matrix[2,1] + conf_matrix[1,1])  # False Positive Rate: FP / (FP + TN)
+
+cat("True Positive Rate:", TPR, "\n")
+cat("False Positive Rate:", FPR, "\n")
+
+
+```
+    
 # Random Forest Supervised Learning Algorithm
 
 # Random Forest Algorithm Top 5000 Most Variable Genes
