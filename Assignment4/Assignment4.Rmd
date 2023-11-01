@@ -212,7 +212,7 @@ conf_matrix
 #calculating True Negative Rate and False Negative Rate for TPR (Recall) and FPR
 print(pred_test$score(msr(c("classif.tnr"))))
 print(pred_test$score(msr(c("classif.fnr"))))
-
+print(pred_test$score(msr(c("classif.acc"))))
 
 #raw calculation method that michael used as double check
 #apparently in R these tables are [y,x] ([row,column]) instead of [x,y] ([column, row])
@@ -256,7 +256,7 @@ learner <- lrn("classif.log_reg") #logistic regression
 learner$train(task, split$train) #train model
 #learner$model # view trained model
 
-pred_train = learner$predict(task, row_ids=split$train)
+#pred_train = learner$predict(task, row_ids=split$train)
 pred_test <- learner$predict(task, row_ids=split$test)
 conf_matrix <- pred_test$confusion 
 conf_matrix
@@ -267,7 +267,7 @@ conf_matrix
 #using these instead of tpr and fpr for reasons detailed above 
 print(pred_test$score(msr(c("classif.tnr"))))
 print(pred_test$score(msr(c("classif.fnr"))))
-
+print(pred_test$score(msr(c("classif.acc"))))
 TPR = conf_matrix[2,2] / (conf_matrix[2,2] + conf_matrix[1,2])  # Sensitivity or Recall: TP / (TP + FN)
 FPR = conf_matrix[2,1] / (conf_matrix[2,1] + conf_matrix[1,1])  # False Positive Rate: FP / (FP + TN)
 
@@ -304,7 +304,7 @@ learner <- lrn("classif.log_reg") #logistic regression
 learner$train(task, split$train) #train model
 #learner$model # view trained model
 
-pred_train = learner$predict(task, row_ids=split$train)
+#pred_train = learner$predict(task, row_ids=split$train)
 pred_test <- learner$predict(task, row_ids=split$test)
 conf_matrix <- pred_test$confusion 
 conf_matrix
@@ -315,7 +315,7 @@ conf_matrix
 #using these instead of tpr and fpr for reasons detailed above 
 print(pred_test$score(msr(c("classif.tnr"))))
 print(pred_test$score(msr(c("classif.fnr"))))
-
+print(pred_test$score(msr(c("classif.acc"))))
 TPR = conf_matrix[2,2] / (conf_matrix[2,2] + conf_matrix[1,2])  # Sensitivity or Recall: TP / (TP + FN)
 FPR = conf_matrix[2,1] / (conf_matrix[2,1] + conf_matrix[1,1])  # False Positive Rate: FP / (FP + TN)
 
@@ -352,7 +352,7 @@ learner <- lrn("classif.log_reg") #logistic regression
 learner$train(task, split$train) #train model
 #learner$model # view trained model
 
-pred_train = learner$predict(task, row_ids=split$train)
+#pred_train = learner$predict(task, row_ids=split$train)
 pred_test <- learner$predict(task, row_ids=split$test)
 conf_matrix <- pred_test$confusion 
 conf_matrix
@@ -363,7 +363,9 @@ conf_matrix
 #using these instead of tpr and fpr for reasons detailed above 
 print(pred_test$score(msr(c("classif.tnr"))))
 print(pred_test$score(msr(c("classif.fnr"))))
+print(pred_test$score(msr(c("classif.acc"))))
 
+#this is just a manual check to make sure matrix isnt messed up somehow
 TPR = conf_matrix[2,2] / (conf_matrix[2,2] + conf_matrix[1,2])  # Sensitivity or Recall: TP / (TP + FN)
 FPR = conf_matrix[2,1] / (conf_matrix[2,1] + conf_matrix[1,1])  # False Positive Rate: FP / (FP + TN)
 
@@ -376,17 +378,17 @@ cat("False Positive Rate:", FPR, "\n")
 ```{r}
 #TEN THOUSAND LOG REG
 #data wranglign from michael 
-top_5000$refinebio_accession_code <- rownames(top_5000) 
-top_5000_labeled <- merge(top_5000, referenceGroup, by = "refinebio_accession_code")
-top_5000 <- select(top_5000, -refinebio_accession_code)
-rownames(top_5000_labeled) <- top_5000_labeled$refinebio_accession_code
-top_5000_labeled <- select(top_5000_labeled, -refinebio_accession_code)
-top_5000_labeled$diabetes <- factor(top_5000_labeled$diabetes, levels = c(0, 1), labels = c("Non-Diabetic", "Diabetic"))
+top_10000$refinebio_accession_code <- rownames(top_10000) 
+top_10000_labeled <- merge(top_10000, referenceGroup, by = "refinebio_accession_code")
+top_10000 <- select(top_10000, -refinebio_accession_code)
+rownames(top_10000_labeled) <- top_10000_labeled$refinebio_accession_code
+top_10000_labeled <- select(top_10000_labeled, -refinebio_accession_code)
+top_10000_labeled$diabetes <- factor(top_10000_labeled$diabetes, levels = c(0, 1), labels = c("Non-Diabetic", "Diabetic"))
 
 #create classification task
 task <- TaskClassif$new(
   "gene_exp",
-  top_5000_labeled,
+  top_10000_labeled,
   "diabetes",
   positive = NULL,
   label = NA_character_,
@@ -400,7 +402,7 @@ learner <- lrn("classif.log_reg") #logistic regression
 learner$train(task, split$train) #train model
 #learner$model # view trained model
 
-pred_train = learner$predict(task, row_ids=split$train)
+#pred_train = learner$predict(task, row_ids=split$train)
 pred_test <- learner$predict(task, row_ids=split$test)
 conf_matrix <- pred_test$confusion 
 conf_matrix
