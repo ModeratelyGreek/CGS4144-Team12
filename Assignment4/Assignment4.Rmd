@@ -199,8 +199,8 @@ gene_weights <- t(learner$model$R) %*% learner$model$coefficients
 threshold <- quantile(abs(gene_weights), 0.50)
 print(threshold)
 # Get the genes by column index
-signature_indices <- which(abs(as.numeric(gene_weights)) > threshold)
-signature_genes_LR_10_50 <- colnames(top_10_labeled)[signature_indices-1]
+signature_indices <- which(abs(as.numeric(gene_weights)) > threshold) #these indices all are one greater than they should be
+signature_genes_LR_10_50 <- colnames(top_10_labeled)[signature_indices-1] #reduce by 1, otherwise it goes into the diabetes column, its overshooting
 signature_genes_LR_10_50
 
 #CALCULATE CONFUSION MATRIX STUFF HERE
@@ -252,7 +252,7 @@ task <- TaskClassif$new(
 split = partition(task, ratio = 0.7)
 learner <- lrn("classif.log_reg") #logistic regression
 learner$train(task, split$train) #train model
-#learner$model # view trained model
+#earner$model$coefficients 
 
 #pred_train = learner$predict(task, row_ids=split$train)
 pred_test <- learner$predict(task, row_ids=split$test)
@@ -270,7 +270,7 @@ signature_genes_LR_100_99 <- colnames(top_100_labeled)[signature_indices-1]
 #using these instead of tpr and fpr for reasons detailed above 
 print(pred_test$score(msr(c("classif.tnr"))))
 print(pred_test$score(msr(c("classif.fnr"))))
-print(pred_test$score(msr(c("classic.auc"))))
+print(pred_test$score(msr(c("classif.auc"))))
 TPR = conf_matrix[2,2] / (conf_matrix[2,2] + conf_matrix[1,2])  # Sensitivity or Recall: TP / (TP + FN)
 FPR = conf_matrix[2,1] / (conf_matrix[2,1] + conf_matrix[1,1])  # False Positive Rate: FP / (FP + TN)
 
@@ -279,11 +279,10 @@ cat("False Positive Rate:", FPR, "\n")
 
 
 ```
-```{r}
-intersect()
-```
+
 
 ```{r}
+stuff <- learner$model$coefficients
 #ONE THOUSAND LOG REG
 #data wranglign from michael 
 top_1000$refinebio_accession_code <- rownames(top_1000) 
@@ -316,17 +315,20 @@ conf_matrix <- pred_test$confusion
 conf_matrix
 
 # Get genes in top weight percentile by percent below:
-gene_weights <- t(learner$model$SV) %*% learner$model$coefs
+
+#running into a bug here??? i have no idea whats going on but it says that gene weights is full of NA???
+# this is because apparently coefficients is full of NaN, which does not make sense
+gene_weights <- t(learner$model$R) %*% learner$model$coefficients
 threshold <- quantile(abs(gene_weights), 0.99)
 
 # Get the genes by column index
-gene_weights <- t(learner$model$R) %*% learner$model$coefficients
+signature_indices <- which(abs(as.numeric(gene_weights)) > threshold)
 signature_genes_LR_1000_99 <- colnames(top_1000_labeled)[signature_indices-1]
 
 #using these instead of tpr and fpr for reasons detailed above 
 print(pred_test$score(msr(c("classif.tnr"))))
 print(pred_test$score(msr(c("classif.fnr"))))
-print(pred_test$score(msr(c("classic.auc"))))
+print(pred_test$score(msr(c("classif.auc"))))
 TPR = conf_matrix[2,2] / (conf_matrix[2,2] + conf_matrix[1,2])  # Sensitivity or Recall: TP / (TP + FN)
 FPR = conf_matrix[2,1] / (conf_matrix[2,1] + conf_matrix[1,1])  # False Positive Rate: FP / (FP + TN)
 
@@ -379,7 +381,7 @@ signature_genes_LR_5000_99 <- colnames(top_5000_labeled)[signature_indices-1]
 #using these instead of tpr and fpr for reasons detailed above 
 print(pred_test$score(msr(c("classif.tnr"))))
 print(pred_test$score(msr(c("classif.fnr"))))
-print(pred_test$score(msr(c("classic.auc"))))
+print(pred_test$score(msr(c("classif.auc"))))
 
 #this is just a manual check to make sure matrix isnt messed up somehow
 TPR = conf_matrix[2,2] / (conf_matrix[2,2] + conf_matrix[1,2])  # Sensitivity or Recall: TP / (TP + FN)
@@ -434,7 +436,7 @@ signature_genes_LR_10000_999 <- colnames(top_10000_labeled)[signature_indices-1]
 #using these instead of tpr and fpr for reasons detailed above 
 print(pred_test$score(msr(c("classif.tnr"))))
 print(pred_test$score(msr(c("classif.fnr"))))
-
+print(pred_test$score(msr(c("classif.auc"))))
 TPR = conf_matrix[2,2] / (conf_matrix[2,2] + conf_matrix[1,2])  # Sensitivity or Recall: TP / (TP + FN)
 FPR = conf_matrix[2,1] / (conf_matrix[2,1] + conf_matrix[1,1])  # False Positive Rate: FP / (FP + TN)
 
@@ -443,6 +445,9 @@ cat("False Positive Rate:", FPR, "\n")
 
 
 ```
+    
+#to compute overlap between the different gene sigs across different numbers of genes,
+#use intersect command for each level
     
 # Random Forest Supervised Learning Algorithm
 
