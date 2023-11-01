@@ -26,9 +26,6 @@ but does not attempt to transform our Gene column to the Entrez IDs as
 this was unnecessary for downstream processing.
 
 ```{r include=FALSE}
-# Reproducibility
-set.seed(123) 
-
 # Mount requisite libraries, install clustering lib
 library(dplyr)
 library(tidyverse)
@@ -39,11 +36,17 @@ library(mlr3)
 library(mlr3learners)
 library(mlr3tuning)
 library(data.table)
+remotes::install_github("mlr-org/mlr3extralearners@*release")
+library(mlr3verse)
+library(mlr3tuning)
+library(data.table)
+library(ggplot2)
+library(ggalluvial)
+library(magrittr)
+library(mlr3extralearners)
+library(pheatmap)
+library(ranger)
 
-if(!require("ggplot2"))
-  install.packages("ggplot2")
-if(!require("ggalluvial"))
-  install.packages("ggalluvial")
 # Create the data folder if it doesn't exist
 if (!dir.exists("data")) {
   dir.create("data")
@@ -67,7 +70,6 @@ data_file <- file.path(data_dir, "SRP075377.tsv")
 # Declare the file path to the metadata file inside the directory saved as `data_dir`
 metadata_file <- file.path(data_dir, "metadata_SRP075377.tsv")
 # Attach library for pipe (%>%)
-library(magrittr)
 ```
 
 ```{r}
@@ -308,199 +310,401 @@ gene_Signatures_Top_1000 <- rownames(variable_importance$importance)
 # # Get the top important genes
 # gene_Signatures_Top_10000 <- rownames(variable_importance$importance)
 # ```
+# Perform a Fresh Load of the Data and Generate Tasks
+```{r}
+# Read in data and metadata TSV file and make Gene column into row names
+metadata <- readr::read_tsv(metadata_file)
+new_expression_df <- readr::read_tsv(data_file) %>%
+  tibble::column_to_rownames("Gene")
+
+metadata <- metadata %>%
+  dplyr::mutate(diabetes = dplyr::case_when(
+    stringr::str_detect(refinebio_subject, "non t2d") ~ "reference",
+    stringr::str_detect(refinebio_subject, "t2d") ~ "diabetic",
+  ))
+
+#Remove ambiguously-labeled samples from metadata
+culledMeta <- metadata[!(metadata$refinebio_subject=="pancreatic islets"),]
+
+discardColumns <- metadata[(metadata$refinebio_subject=="pancreatic islets"),]
+discardColumns = as.vector(discardColumns$refinebio_accession_code)
+length(discardColumns)
+
+#Preserve only columns in expression_df that match one of the accession ids
+culled_expression_df = new_expression_df[,!(names(new_expression_df) %in% discardColumns)]
+
+expression_df <- culled_expression_df
+rm(metadata)
+rm(new_expression_df)
+rm(culled_expression_df)
+
+referenceGroup <- subset(culledMeta, select = c("refinebio_accession_code", "diabetes"))
+referenceGroup <- referenceGroup %>%
+  dplyr::mutate(diabetes = dplyr::case_when(
+    stringr::str_detect(diabetes, "reference") ~ 0,
+    stringr::str_detect(diabetes, "diabetic") ~ 1,
+  ))
+
+reference_group <- referenceGroup$diabetes
+
+# Calculate row variance
+row_variances <- apply(expression_df, 1, mad)
+expression_df$row_variance <- row_variances
+
+# Sort by row variance
+expression_df <- expression_df[order(row_variances, decreasing = TRUE), ]
+
+# Remove the row variance column
+expression_df <- select(expression_df, -row_variance)
+
+#Rip out those pesky rownames, join on that column, then drop the column
+temp <- as.data.frame(t(expression_df))
+temp$refinebio_accession_code <- rownames(temp) 
+expression_df_labeled <- merge(temp, referenceGroup, by = "refinebio_accession_code")
+rm(temp)        
+rownames(expression_df_labeled) <- expression_df_labeled$refinebio_accession_code
+expression_df_labeled <- select(expression_df_labeled, -refinebio_accession_code)
+expression_df_labeled$diabetes <- factor(
+  expression_df_labeled$diabetes, 
+  levels = c(0, 1), labels = c("Non-Diabetic", "Diabetic")
+)
+
+top_10 <- select(expression_df_labeled, 1:10, ncol(expression_df_labeled))
+top_100 <- select(expression_df_labeled, 1:100, ncol(expression_df_labeled))
+top_1000 <- select(expression_df_labeled, 1:1000, ncol(expression_df_labeled))
+top_5000 <- select(expression_df_labeled, 1:5000, ncol(expression_df_labeled))
+top_10000 <- select(expression_df_labeled, 1:10000, ncol(expression_df_labeled))
+Task_SVM_10 <- TaskClassif$new(id = "gene_exp", backend = top_10, target = "diabetes")
+Task_SVM_100 <- TaskClassif$new(id = "gene_exp", backend = top_100, target = "diabetes")
+Task_SVM_1000 <- TaskClassif$new(id = "gene_exp", backend = top_1000, target = "diabetes")
+Task_SVM_5000 <- TaskClassif$new(id = "gene_exp", backend = top_5000, target = "diabetes")
+Task_SVM_10000 <- TaskClassif$new(id = "gene_exp", backend = top_10000, target = "diabetes")
+```
+
+# Support Vector Machines
+
+## 🔀🔄⬇️ SVM - 10
 
 ```{r}
-#Rip out those pesky rownames, join on that column, then drop the column
-top_10$refinebio_accession_code <- rownames(top_10) 
-top_10_labeled <- merge(top_10, referenceGroup, by = "refinebio_accession_code")
-top_10 <- select(top_10, -refinebio_accession_code)
-rownames(top_10_labeled) <- top_10_labeled$refinebio_accession_code
-top_10_labeled <- select(top_10_labeled, -refinebio_accession_code)
-
-#Turn binary column into a factor
-top_10_labeled$diabetes <- factor(top_10_labeled$diabetes, levels = c(0, 1), labels = c("Non-Diabetic", "Diabetic"))
-
-task <- TaskClassif$new(id = "gene_exp", backend = top_10_labeled, target = "diabetes")
-split = partition(task, ratio = 0.7)
-learner <- lrn("classif.svm", kernel = "linear")
-svm_model <- learner$train(task, split$train)
-predictions <- learner$predict(task, split$test)
+set.seed(123)
+split = partition(Task_SVM_10, ratio = 0.7)
+learner <- lrn("classif.svm", kernel = "linear", predict_type="prob")
+svm_model <- learner$train(Task_SVM_10, split$train)
+predictions <- learner$predict(Task_SVM_10, split$test)
 model <- svm_model$model
 
 # Get genes in top weight percentile by percent below:
 gene_weights <- t(model$SV) %*% model$coefs
-threshold <- quantile(abs(gene_weights), 0.50)
-
-# Get the genes by column index
-signature_indices <- which(abs(as.numeric(gene_weights)) > threshold)
-signature_genes_SVM_10_50 <- colnames(top_10_labeled)[signature_indices]
+N <- 2 #sqrt(5000), arbitrarily
+ordered_indices <- order(abs(as.numeric(gene_weights)), decreasing = TRUE)[1:N]
+signature_genes_SVM_10 <- colnames(top_10)[ordered_indices]
 
 # Get some metrics
 cm = predictions$confusion
-auc = predictions$score(msr("classif.acc"))
-TPR = cm[2,2] / (cm[2,2] + cm[2,1])  # Sensitivity or Recall: TP / (TP + FN)
-FPR = cm[1,2] / (cm[1,2] + cm[1,1])  # False Positive Rate: FP / (FP + TN)
+aucMsr <- msr("classif.auc")
+AUC = aucMsr$score(prediction = predictions)
+TPR = cm[2,2] / (cm[2,2] + cm[1,2])  # Sensitivity or Recall: TP / (TP + FN)
+FPR = cm[2,1] / (cm[2,1] + cm[1,1])  # False Positive Rate: FP / (FP + TN)
 
 # Spit it all out
-print(auc)
 print(cm)
+cat("\n")
+cat("Area Under Curve:", AUC, "\n")
 cat("True Positive Rate:", TPR, "\n")
 cat("False Positive Rate:", FPR, "\n")
 ```
 
+## 🔀🔄⬇️ SVM - 100
+
 ```{r}
-#Rip out those pesky rownames, join on that column, then drop the column
-top_100$refinebio_accession_code <- rownames(top_100) 
-top_100_labeled <- merge(top_100, referenceGroup, by = "refinebio_accession_code")
-top_100 <- select(top_100, -refinebio_accession_code)
-rownames(top_100_labeled) <- top_100_labeled$refinebio_accession_code
-top_100_labeled <- select(top_100_labeled, -refinebio_accession_code)
-
-#Turn binary column into a factor
-top_100_labeled$diabetes <- factor(top_100_labeled$diabetes, levels = c(0, 1), labels = c("Non-Diabetic", "Diabetic"))
-
-task <- TaskClassif$new(id = "gene_exp", backend = top_100_labeled, target = "diabetes")
-split = partition(task, ratio = 0.7)
-learner <- lrn("classif.svm", kernel = "linear")
-svm_model <- learner$train(task, split$train)
-predictions <- learner$predict(task, split$test)
+set.seed(123)
+split = partition(Task_SVM_100, ratio = 0.7)
+learner <- lrn("classif.svm", kernel = "linear", predict_type="prob")
+svm_model <- learner$train(Task_SVM_100, split$train)
+predictions <- learner$predict(Task_SVM_100, split$test)
 model <- svm_model$model
 
 # Get genes in top weight percentile by percent below:
 gene_weights <- t(model$SV) %*% model$coefs
-threshold <- quantile(abs(gene_weights), 0.90)
-
-# Get the genes by column index
-signature_indices <- which(abs(as.numeric(gene_weights)) > threshold)
-signature_genes_SVM_100_90 <- colnames(top_100_labeled)[signature_indices]
+N <- 5 #sqrt(100), arbitrarily
+ordered_indices <- order(abs(as.numeric(gene_weights)), decreasing = TRUE)[1:N]
+signature_genes_SVM_100 <- colnames(top_100)[ordered_indices]
 
 # Get some metrics
 cm = predictions$confusion
-auc = predictions$score(msr("classif.acc"))
-TPR = cm[2,2] / (cm[2,2] + cm[2,1])  # Sensitivity or Recall: TP / (TP + FN)
-FPR = cm[1,2] / (cm[1,2] + cm[1,1])  # False Positive Rate: FP / (FP + TN)
+aucMsr <- msr("classif.auc")
+AUC = aucMsr$score(prediction = predictions)
+TPR = cm[2,2] / (cm[2,2] + cm[1,2])  # Sensitivity or Recall: TP / (TP + FN)
+FPR = cm[2,1] / (cm[2,1] + cm[1,1])  # False Positive Rate: FP / (FP + TN)
 
 # Spit it all out
-print(auc)
 print(cm)
+cat("\n")
+cat("Area Under Curve:", AUC, "\n")
 cat("True Positive Rate:", TPR, "\n")
 cat("False Positive Rate:", FPR, "\n")
 ```
 
+## 🔀🔄⬇️ SVM - 1,000
+
 ```{r}
-#Rip out those pesky rownames, join on that column, then drop the column
-top_1000$refinebio_accession_code <- rownames(top_1000) 
-top_1000_labeled <- merge(top_1000, referenceGroup, by = "refinebio_accession_code")
-top_1000 <- select(top_1000, -refinebio_accession_code)
-rownames(top_1000_labeled) <- top_1000_labeled$refinebio_accession_code
-top_1000_labeled <- select(top_1000_labeled, -refinebio_accession_code)
-
-#Turn binary column into a factor
-top_1000_labeled$diabetes <- factor(top_1000_labeled$diabetes, levels = c(0, 1), labels = c("Non-Diabetic", "Diabetic"))
-
-task <- TaskClassif$new(id = "gene_exp", backend = top_1000_labeled, target = "diabetes")
-split = partition(task, ratio = 0.7)
-learner <- lrn("classif.svm", kernel = "linear")
-svm_model <- learner$train(task, split$train)
-predictions <- learner$predict(task, split$test)
+set.seed(123)
+split = partition(Task_SVM_1000, ratio = 0.7)
+learner <- lrn("classif.svm", kernel = "linear", predict_type="prob")
+svm_model <- learner$train(Task_SVM_1000, split$train)
+predictions <- learner$predict(Task_SVM_1000, split$test)
 model <- svm_model$model
 
 # Get genes in top weight percentile by percent below:
 gene_weights <- t(model$SV) %*% model$coefs
-threshold <- quantile(abs(gene_weights), 0.99)
-
-# Get the genes by column index
-signature_indices <- which(abs(as.numeric(gene_weights)) > threshold)
-signature_genes_SVM_1000_99 <- colnames(top_1000_labeled)[signature_indices]
+N <- 10 #sqrt(1000), arbitrarily
+ordered_indices <- order(abs(as.numeric(gene_weights)), decreasing = TRUE)[1:N]
+signature_genes_SVM_1000 <- colnames(top_1000)[ordered_indices]
 
 # Get some metrics
 cm = predictions$confusion
-auc = predictions$score(msr("classif.acc"))
-TPR = cm[2,2] / (cm[2,2] + cm[2,1])  # Sensitivity or Recall: TP / (TP + FN)
-FPR = cm[1,2] / (cm[1,2] + cm[1,1])  # False Positive Rate: FP / (FP + TN)
+aucMsr <- msr("classif.auc")
+AUC = aucMsr$score(prediction = predictions)
+TPR = cm[2,2] / (cm[2,2] + cm[1,2])  # Sensitivity or Recall: TP / (TP + FN)
+FPR = cm[2,1] / (cm[2,1] + cm[1,1])  # False Positive Rate: FP / (FP + TN)
 
 # Spit it all out
-print(auc)
 print(cm)
+cat("\n")
+cat("Area Under Curve:", AUC, "\n")
 cat("True Positive Rate:", TPR, "\n")
 cat("False Positive Rate:", FPR, "\n")
 ```
 
+## 🔀🔄⬇️ SVM - 5,000
+
 ```{r}
-#Rip out those pesky rownames, join on that column, then drop the column
-top_5000$refinebio_accession_code <- rownames(top_5000) 
-top_5000_labeled <- merge(top_5000, referenceGroup, by = "refinebio_accession_code")
-top_5000 <- select(top_5000, -refinebio_accession_code)
-rownames(top_5000_labeled) <- top_5000_labeled$refinebio_accession_code
-top_5000_labeled <- select(top_5000_labeled, -refinebio_accession_code)
-
-#Turn binary column into a factor
-top_5000_labeled$diabetes <- factor(top_5000_labeled$diabetes, levels = c(0, 1), labels = c("Non-Diabetic", "Diabetic"))
-
-task <- TaskClassif$new(id = "gene_exp", backend = top_5000_labeled, target = "diabetes")
-split = partition(task, ratio = 0.7)
-learner <- lrn("classif.svm", kernel = "linear")
-svm_model <- learner$train(task, split$train)
-predictions <- learner$predict(task, split$test)
+set.seed(123)
+split = partition(Task_SVM_5000, ratio = 0.7)
+learner <- lrn("classif.svm", kernel = "linear", predict_type="prob")
+svm_model <- learner$train(Task_SVM_5000, split$train)
+predictions <- learner$predict(Task_SVM_5000, split$test)
 model <- svm_model$model
 
 # Get genes in top weight percentile by percent below:
 gene_weights <- t(model$SV) %*% model$coefs
-threshold <- quantile(abs(gene_weights), 0.999)
-
-# Get the genes by column index
-signature_indices <- which(abs(as.numeric(gene_weights)) > threshold)
-signature_genes_SVM_5000_999 <- colnames(top_5000_labeled)[signature_indices]
+N <- 17 # cbrt(5000), arbitrarily
+ordered_indices <- order(abs(as.numeric(gene_weights)), decreasing = TRUE)[1:N]
+signature_genes_SVM_5000 <- colnames(top_5000)[ordered_indices]
 
 # Get some metrics
 cm = predictions$confusion
-auc = predictions$score(msr("classif.acc"))
-TPR = cm[2,2] / (cm[2,2] + cm[2,1])  # Sensitivity or Recall: TP / (TP + FN)
-FPR = cm[1,2] / (cm[1,2] + cm[1,1])  # False Positive Rate: FP / (FP + TN)
+aucMsr <- msr("classif.auc")
+AUC = aucMsr$score(prediction = predictions)
+TPR = cm[2,2] / (cm[2,2] + cm[1,2])  # Sensitivity or Recall: TP / (TP + FN)
+FPR = cm[2,1] / (cm[2,1] + cm[1,1])  # False Positive Rate: FP / (FP + TN)
 
 # Spit it all out
-print(auc)
 print(cm)
+cat("\n")
+cat("Area Under Curve:", AUC, "\n")
 cat("True Positive Rate:", TPR, "\n")
 cat("False Positive Rate:", FPR, "\n")
 ```
 
+## 🔀🔄⬇️ SVM - 10,000
+
 ```{r}
-#Rip out those pesky rownames, join on that column, then drop the column
-top_10000$refinebio_accession_code <- rownames(top_10000) 
-top_10000_labeled <- merge(top_10000, referenceGroup, by = "refinebio_accession_code")
-top_10000 <- select(top_10000, -refinebio_accession_code)
-rownames(top_10000_labeled) <- top_10000_labeled$refinebio_accession_code
-top_10000_labeled <- select(top_10000_labeled, -refinebio_accession_code)
-
-#Turn binary column into a factor
-top_10000_labeled$diabetes <- factor(top_10000_labeled$diabetes, levels = c(0, 1), labels = c("Non-Diabetic", "Diabetic"))
-
-task <- TaskClassif$new(id = "gene_exp", backend = top_10000_labeled, target = "diabetes")
-split = partition(task, ratio = 0.7)
-learner <- lrn("classif.svm", kernel = "linear")
-svm_model <- learner$train(task, split$train)
-predictions <- learner$predict(task, split$test)
+set.seed(123)
+split = partition(Task_SVM_10000, ratio = 0.7)
+learner <- lrn("classif.svm", kernel = "linear", predict_type="prob")
+svm_model <- learner$train(Task_SVM_10000, split$train)
+predictions <- learner$predict(Task_SVM_10000, split$test)
 model <- svm_model$model
 
 # Get genes in top weight percentile by percent below:
 gene_weights <- t(model$SV) %*% model$coefs
-threshold <- quantile(abs(gene_weights), 0.999)
-
-# Get the genes by column index
-signature_indices <- which(abs(as.numeric(gene_weights)) > threshold)
-signature_genes_SVM_10000_999 <- colnames(top_10000_labeled)[signature_indices]
+N <- 22 
+ordered_indices <- order(abs(as.numeric(gene_weights)), decreasing = TRUE)[1:N]
+signature_genes_SVM_10000 <- colnames(top_10000)[ordered_indices]
 
 # Get some metrics
 cm = predictions$confusion
-auc = predictions$score(msr("classif.acc"))
-TPR = cm[2,2] / (cm[2,2] + cm[2,1])  # Sensitivity or Recall: TP / (TP + FN)
-FPR = cm[1,2] / (cm[1,2] + cm[1,1])  # False Positive Rate: FP / (FP + TN)
+aucMsr <- msr("classif.auc")
+AUC = aucMsr$score(prediction = predictions)
+TPR = cm[2,2] / (cm[2,2] + cm[1,2])  # Sensitivity or Recall: TP / (TP + FN)
+FPR = cm[2,1] / (cm[2,1] + cm[1,1])  # False Positive Rate: FP / (FP + TN)
 
 # Spit it all out
-print(auc)
 print(cm)
+cat("\n")
+cat("Area Under Curve:", AUC, "\n")
 cat("True Positive Rate:", TPR, "\n")
 cat("False Positive Rate:", FPR, "\n")
 ```
-Model performance degrades further at 10,000 genes. In order to attempt to correct this I explored various kernels and hyperparameters including RBF, Polynomial, and Sigmoid. None of these improved performance although polynomial with a high coefficient got better results than the others. What we're witnessing here is the "curse of dimensionality" to SVM. It is overfitting to the noise produced by extending the feature vector to include less relevant genes. I also attempted to improve results, particularly the 0 TN FP rate (divide by zero error in AUC calculation) by setting the classifier's class weights to the inverse of their frequency as was recommended in several websites. Unfortunately this did not improve the outcome, and SVM remains victim to overfitting high-dimensional noise.
+
+Model performance degrades at 10,000 genes. In order to attempt to
+correct this I explored various kernels and hyperparameters including
+RBF, Polynomial, and Sigmoid. None of these improved performance
+although polynomial with a high coefficient got better results than the
+others. What we're witnessing here is the "curse of dimensionality" to
+SVM. It is overfitting to the noise produced by extending the feature
+vector to include less relevant genes. I also attempted to improve
+results, particularly the 0 TN FP rate (divide by zero error in AUC
+calculation) by setting the classifier's class weights to the inverse of
+their frequency as was recommended in several websites. Unfortunately
+this did not improve the outcome, and SVM remains victim to overfitting
+high-dimensional noise.
+
+```{r}
+
+vectors <- list(
+  SVM10=signature_genes_SVM_10,
+  SVM100=signature_genes_SVM_100,
+  SVM1000=signature_genes_SVM_1000,
+  SVM5000=signature_genes_SVM_5000,
+  SVM10000=signature_genes_SVM_10000
+)
+  
+# Initialize a matrix to store the fractions
+overlap_matrix <- matrix(0, nrow = length(vectors), ncol = length(vectors))
+
+# Calculate the fractions
+for (i in 1:length(vectors)) {
+  cat(names(vectors)[i], " signature gene #: ", length(vectors[[i]]), "\n")
+  for (j in 1:length(vectors)) {
+    if (i<j) {
+      overlap_matrix[i,j]<-length(intersect(vectors[[i]], vectors[[j]])) / length(vectors[[i]])
+    }
+  }
+}
+
+cat("\n")
+
+# Display the overlap matrix
+rownames(overlap_matrix) <- colnames(overlap_matrix) <- c(
+  "SVM10",
+  "SVM100",
+  "SVM1000",
+  "SVM5000",
+  "SVM10000")
+print(overlap_matrix)
+```
+
+No overlap, wild.
+
+# Heatmap 🌶️🗺️
+
+Gather superset of all unique genes.
+
+```{r}
+all_unique_genes <- Reduce(union, list(
+  signature_genes_SVM_10,
+  signature_genes_SVM_100,
+  signature_genes_SVM_1000,
+  signature_genes_SVM_5000,
+  signature_genes_SVM_10000 #be sure to re add the comma here TODO
+  # signature_genes_RF_10,
+  # signature_genes_RF_100,
+  # signature_genes_RF_1000,
+  # signature_genes_RF_5000,
+  # signature_genes_RF_10000, 
+
+# Pending Implementation from Sahas, Rayyan (either change the names here or in your code. Either way, these should be vectors of gene names. chr[1:N] "ENSG0000..., ENSG0000, ENSG1231141, ... etc")
+  
+  # signature_genes_LR_10,
+  # signature_genes_LR_100,
+  # signature_genes_LR_1000
+))
+```
+
+1.  Extract a subset of the original gene expression dataframe which
+    only has the selected signature genes.
+2.  Adjust "reference group" dataframe to put samples in rownames
+3.  Sort
+
+```{r}
+subsetAlignedToSignatureGenes <- expression_df[rownames(expression_df) %in% all_unique_genes, ]
+subsetAlignedToSignatureGenes <- as.data.frame(subsetAlignedToSignatureGenes)
+
+referenceGroup <- as.data.frame(referenceGroup)
+rownames(referenceGroup) <- referenceGroup$refinebio_accession_code
+
+referenceGroup$refinebio_accession_code <- NULL
+
+subsetAlignedToSignatureGenes <- subsetAlignedToSignatureGenes[, rownames(referenceGroup)]
+
+# Convert Diabetes Column to Factor
+referenceGroup$diabetes <- as.factor(referenceGroup$diabetes)
+ann_colors <- list(diabetes = c('0' = 'blue', '1' = 'red'))
+
+# Reorder the gene expression frame to match order of samples in annotation data 
+ordered_gene_df <- subsetAlignedToSignatureGenes[, rownames(referenceGroup)]
+```
+
+Below, two heatmaps are illustrated. The reason for this is that we have
+been provided instructions to illustrate hierarchical clustering on both
+axes but also to provide annotation data. We go to extra effort to order
+this annotation data in hopes to see contrast on the heatmap that the
+hierarchical clustering would override the sample order of (because it
+is susceptible to trends in the provided gene vectors that are unrelated
+to our target group of diabetics / nondiabetics). In order to ensure we
+satisfy the conditions of the assignment we have therefore provided two
+graphs, without and with clustering, to observe these differences.
+
+```{r}
+library(pheatmap)
+
+pheatmap(ordered_gene_df,
+         annotation_col = referenceGroup,
+         annotation_colors = ann_colors,
+         show_rownames = T,
+         fontsize = 6,
+         show_colnames = F, # Assuming sample names are not important for the heatmap
+         clustering_distance_rows = "correlation",
+         clustering_method = "complete",
+         cluster_cols = F,
+         scale = "row",
+         width = 1920,
+         height = 1080,
+         color = colorRampPalette(c("black", "purple", "white"))(255), # Color scheme
+         border_color = NA # No border for each cell,
+)
+```
+
+```{r}
+pheatmap(ordered_gene_df,
+         annotation_col = referenceGroup,
+         annotation_colors = ann_colors,
+         show_rownames = T,
+         fontsize = 6,
+         show_colnames = F, # Assuming sample names are not important for the heatmap
+         clustering_distance_rows = "correlation",
+         clustering_method = "complete",
+         cluster_cols = T,
+         scale = "row",
+         width = 1920,
+         height = 1080,
+         color = colorRampPalette(c("black", "purple", "white"))(255), # Color scheme
+         border_color = NA # No border for each cell,
+)
+```
+
+Admittedly the differences in the two heatmaps aren't very pronounced.
+We scale the data by gene so as to visually present the expression Z
+score of a gene relative to itself in adjacent samples. Hierarchical
+clustering does visually present some contrast towards the right of the
+graph, but our order-by-annotation version of the heatmap (first of the
+two) is significantly less noteworthy in its trends. We assume that the
+trends our various clustering algorithms identified were simply more
+complex than easily made visible. That's to say, SVM likely discovered
+not individual genes but combinations of genes which help discriminate a
+sample, and visualizing this relies heavily on the order in which genes
+are presented. We experimented with row clustering by correlation
+(cosine / pearson) rather than euclidean distance and otherwise altering
+the visualization (z scores within samples rather than within genes
+accross samples) but still were unable to show any interesting contrast
+between our columns of diabetics and nondiabetics in the first graph.\
+\
+If we were to make a more serious effort as researchers not to explore
+various methods but to pick an optimal one, we'd attempt to tune the
+hyperparameters of SVM after first performing PCA in order to identify
+the most significant genes. We might then use euclidean distance to
+reintroduce colinear but therefore related and significant genes to our
+"signatures" and visualize these exclusively, as random forest and
+logistic regression both perform very poorly by comparison.
