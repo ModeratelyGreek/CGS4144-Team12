@@ -476,149 +476,310 @@ rownames(overlap_matrix) <- colnames(overlap_matrix) <- c(
   "LR10000")
 print(overlap_matrix)
 ```
-
-```
+  
     
 # Random Forest Supervised Learning Algorithm
 
-# Random Forest Algorithm Top 5000 Most Variable Genes
-# ```{r}
-# # Split the data into training and testing sets
-# train_indices <- createDataPartition(culledMeta$diabetes, p = 0.7, list = FALSE)
-# train_data <- top_5000[train_indices, ]
-# test_data <- top_5000[-train_indices, ]
-# train_labels <- culledMeta$diabetes[train_indices]
-#
-# # Train a Random Forest model
-# rf_model <- train(
-#   x = train_data,
-#   y = train_labels,
-#   method = "rf",
-#   trControl = trainControl(method = "cv")
-# )
-#
-# # Make predictions on the test data
-# predictions_Top_5000 <- predict(rf_model, newdata = test_data)
-#
-#
-# # Extract the gene signatures from the Random Forest model.
-# # Extract variable importance
-# variable_importance <- varImp(rf_model)
-#
-# # Get the top important genes
-# gene_Signatures_Top_5000 <- rownames(variable_importance$importance)
-# ```
-
 # Random Forest Algorithm Top 10 Most Variable Genes
 ```{r}
-# Split the data into training and testing sets
-train_indices <- createDataPartition(culledMeta$diabetes, p = 0.7, list = FALSE)
-train_data <- top_10[train_indices, ]
-test_data <- top_10[-train_indices, ]
-train_labels <- culledMeta$diabetes[train_indices]
- 
-# Train a Random Forest model
-rf_model <- train(
-  x = train_data,
-  y = train_labels,
-  method = "rf",
-  trControl = trainControl(method = "cv")
+temp <- as.data.frame(t(expression_df))
+temp$refinebio_accession_code <- rownames(temp)
+expression_df_labeled <- merge(temp, referenceGroup, by = "refinebio_accession_code")
+rm(temp)
+rownames(expression_df_labeled) <- expression_df_labeled$refinebio_accession_code
+expression_df_labeled <- select(expression_df_labeled, -refinebio_accession_code)
+expression_df_labeled$diabetes <- factor(
+  expression_df_labeled$diabetes,
+  levels = c(0, 1), labels = c("Non-Diabetic", "Diabetic")
 )
- 
-# Make predictions on the test data
-predictions_Top_10 <- predict(rf_model, newdata = test_data)
 
-# Extract the gene signatures from the Random Forest model.
-# Extract variable importance
-variable_importance <- varImp(rf_model)
+top_10 <- select(expression_df_labeled, 1:10, ncol(expression_df_labeled))
 
-# Get the top important genes
-gene_Signatures_Top_10 <- rownames(variable_importance$importance)
+#create classification task
+task <- TaskClassif$new(
+  "gene_exp",
+  top_10,
+  "diabetes",
+  positive = NULL,
+  label = NA_character_,
+  extra_args = list()
+)
+set.seed(123)
+# Split the data into training and testing sets
+split <- partition(task, ratio = 0.7)
+learner <- lrn("classif.ranger",predict_type = "prob")
+learner$train(task, split$train) #train model
+
+pred_train = learner$predict(task, row_ids=split$train)
+pred_test <- learner$predict(task, row_ids=split$test)
+
+conf_matrix <- pred_test$confusion
+
+conf_matrix
+
+#signature genes
+N <- 2
+signature_genes_RF_10 <- names(sort(learner$model$coefficients, decreasing = T))[1:N]
+
+print(pred_test$score(msr(c("classif.tnr"))))
+print(pred_test$score(msr(c("classif.fnr"))))
+aucMsr <- msr("classif.auc")
+AUC = aucMsr$score(prediction = pred_test)
+
+TPR = conf_matrix[2,2] / (conf_matrix[2,2] + conf_matrix[1,2])  # Sensitivity or Recall: TP / (TP + FN)
+FPR = conf_matrix[2,1] / (conf_matrix[2,1] + conf_matrix[1,1])  # False Positive Rate: FP / (FP + TN)
+cat("True Positive Rate:", TPR, "\n")
+cat("False Positive Rate:", FPR, "\n")
+cat("AUC:", AUC,"\n")
 ```
 
 # Random Forest Algorithm Top 100 Most Variable Genes
 ```{r}
-# Split the data into training and testing sets
-train_indices <- createDataPartition(culledMeta$diabetes, p = 0.7, list = FALSE)
-train_data <- top_100[train_indices, ]
-test_data <- top_100[-train_indices, ]
-train_labels <- culledMeta$diabetes[train_indices]
- 
-# Train a Random Forest model
-rf_model <- train(
-  x = train_data,
-  y = train_labels,
-  method = "rf",
-  trControl = trainControl(method = "cv")
+temp <- as.data.frame(t(expression_df))
+temp$refinebio_accession_code <- rownames(temp)
+expression_df_labeled <- merge(temp, referenceGroup, by = "refinebio_accession_code")
+rm(temp)
+rownames(expression_df_labeled) <- expression_df_labeled$refinebio_accession_code
+expression_df_labeled <- select(expression_df_labeled, -refinebio_accession_code)
+expression_df_labeled$diabetes <- factor(
+  expression_df_labeled$diabetes,
+  levels = c(0, 1), labels = c("Non-Diabetic", "Diabetic")
 )
- 
-# Make predictions on the test data
-predictions_Top_100 <- predict(rf_model, newdata = test_data)
 
+top_100 <- select(expression_df_labeled, 1:100, ncol(expression_df_labeled))
 
-# Extract the gene signatures from the Random Forest model.
-# Extract variable importance
-variable_importance <- varImp(rf_model)
+#create classification task
+task <- TaskClassif$new(
+  "gene_exp",
+  top_100,
+  "diabetes",
+  positive = NULL,
+  label = NA_character_,
+  extra_args = list()
+)
 
-# Get the top important genes
-gene_Signatures_Top_100 <- rownames(variable_importance$importance)
+# Split the data into training and testing sets
+split <- partition(task, ratio = 0.7)
+learner <- lrn("classif.ranger",predict_type = "prob")
+learner$train(task, split$train) #train model
+
+pred_train = learner$predict(task, row_ids=split$train)
+pred_test <- learner$predict(task, row_ids=split$test)
+
+conf_matrix <- pred_test$confusion
+
+conf_matrix
+
+#signature genes
+N <- 5
+signature_genes_RF_100 <- names(sort(learner$model$coefficients, decreasing = T))[1:N]
+
+print(pred_test$score(msr(c("classif.tnr"))))
+print(pred_test$score(msr(c("classif.fnr"))))
+aucMsr <- msr("classif.auc")
+AUC = aucMsr$score(prediction = pred_test)
+
+TPR = conf_matrix[2,2] / (conf_matrix[2,2] + conf_matrix[1,2])  # Sensitivity or Recall: TP / (TP + FN)
+FPR = conf_matrix[2,1] / (conf_matrix[2,1] + conf_matrix[1,1])  # False Positive Rate: FP / (FP + TN)
+cat("True Positive Rate:", TPR, "\n")
+cat("False Positive Rate:", FPR, "\n")
+cat("AUC:", AUC,"\n")
 ```
 
 # Random Forest Algorithm Top 1000 Most Variable Genes
 ```{r}
-# Split the data into training and testing sets
-train_indices <- createDataPartition(culledMeta$diabetes, p = 0.7, list = FALSE)
-train_data <- top_1000[train_indices, ]
-test_data <- top_1000[-train_indices, ]
-train_labels <- culledMeta$diabetes[train_indices]
- 
-# Train a Random Forest model
-rf_model <- train(
-  x = train_data,
-  y = train_labels,
-  method = "rf",
-  trControl = trainControl(method = "cv")
+temp <- as.data.frame(t(expression_df))
+temp$refinebio_accession_code <- rownames(temp)
+expression_df_labeled <- merge(temp, referenceGroup, by = "refinebio_accession_code")
+rm(temp)
+rownames(expression_df_labeled) <- expression_df_labeled$refinebio_accession_code
+expression_df_labeled <- select(expression_df_labeled, -refinebio_accession_code)
+expression_df_labeled$diabetes <- factor(
+  expression_df_labeled$diabetes,
+  levels = c(0, 1), labels = c("Non-Diabetic", "Diabetic")
 )
- 
-# Make predictions on the test data
-predictions_Top_1000 <- predict(rf_model, newdata = test_data)
 
+top_1000 <- select(expression_df_labeled, 1:1000, ncol(expression_df_labeled))
 
-# Extract the gene signatures from the Random Forest model.
-# Extract variable importance
-variable_importance <- varImp(rf_model)
+#create classification task
+task <- TaskClassif$new(
+  "gene_exp",
+  top_1000,
+  "diabetes",
+  positive = NULL,
+  label = NA_character_,
+  extra_args = list()
+)
 
-# Get the top important genes
-gene_Signatures_Top_1000 <- rownames(variable_importance$importance)
+# Split the data into training and testing sets
+split <- partition(task, ratio = 0.7)
+learner <- lrn("classif.ranger",predict_type = "prob")
+learner$train(task, split$train) #train model
+
+pred_train = learner$predict(task, row_ids=split$train)
+pred_test <- learner$predict(task, row_ids=split$test)
+
+conf_matrix <- pred_test$confusion
+
+conf_matrix
+
+#signature genes
+N <- 10
+signature_genes_RF_1000 <- names(sort(learner$model$coefficients, decreasing = T))[1:N]
+
+print(pred_test$score(msr(c("classif.tnr"))))
+print(pred_test$score(msr(c("classif.fnr"))))
+aucMsr <- msr("classif.auc")
+AUC = aucMsr$score(prediction = pred_test)
+
+TPR = conf_matrix[2,2] / (conf_matrix[2,2] + conf_matrix[1,2])  # Sensitivity or Recall: TP / (TP + FN)
+FPR = conf_matrix[2,1] / (conf_matrix[2,1] + conf_matrix[1,1])  # False Positive Rate: FP / (FP + TN)
+cat("True Positive Rate:", TPR, "\n")
+cat("False Positive Rate:", FPR, "\n")
+cat("AUC:", AUC,"\n")
+```
+
+# Random Forest Algorithm Top 5000 Most Variable Genes
+```{r}
+temp <- as.data.frame(t(expression_df))
+temp$refinebio_accession_code <- rownames(temp)
+expression_df_labeled <- merge(temp, referenceGroup, by = "refinebio_accession_code")
+rm(temp)
+rownames(expression_df_labeled) <- expression_df_labeled$refinebio_accession_code
+expression_df_labeled <- select(expression_df_labeled, -refinebio_accession_code)
+expression_df_labeled$diabetes <- factor(
+  expression_df_labeled$diabetes,
+  levels = c(0, 1), labels = c("Non-Diabetic", "Diabetic")
+)
+
+top_5000 <- select(expression_df_labeled, 1:5000, ncol(expression_df_labeled))
+
+#create classification task
+task <- TaskClassif$new(
+  "gene_exp",
+  top_5000,
+  "diabetes",
+  positive = NULL,
+  label = NA_character_,
+  extra_args = list()
+)
+
+# Split the data into training and testing sets
+split <- partition(task, ratio = 0.7)
+learner <- lrn("classif.ranger",predict_type = "prob")
+learner$train(task, split$train) #train model
+
+pred_train = learner$predict(task, row_ids=split$train)
+pred_test <- learner$predict(task, row_ids=split$test)
+
+conf_matrix <- pred_test$confusion
+
+conf_matrix
+
+#signature genes
+N <- 17
+signature_genes_RF_5000 <- names(sort(learner$model$coefficients, decreasing = T))[1:N]
+
+print(pred_test$score(msr(c("classif.tnr"))))
+print(pred_test$score(msr(c("classif.fnr"))))
+aucMsr <- msr("classif.auc")
+AUC = aucMsr$score(prediction = pred_test)
+
+TPR = conf_matrix[2,2] / (conf_matrix[2,2] + conf_matrix[1,2])  # Sensitivity or Recall: TP / (TP + FN)
+FPR = conf_matrix[2,1] / (conf_matrix[2,1] + conf_matrix[1,1])  # False Positive Rate: FP / (FP + TN)
+cat("True Positive Rate:", TPR, "\n")
+cat("False Positive Rate:", FPR, "\n")
+cat("AUC:", AUC,"\n")
 ```
 
 # Random Forest Algorithm Top 10000 Most Variable Genes
-# ```{r}
-# # Split the data into training and testing sets
-# train_indices <- createDataPartition(culledMeta$diabetes, p = 0.7, list = FALSE)
-# train_data <- top_10000[train_indices, ]
-# test_data <- top_10000[-train_indices, ]
-# train_labels <- culledMeta$diabetes[train_indices]
-#  
-# # Train a Random Forest model
-# rf_model <- train(
-#   x = train_data,
-#   y = train_labels,
-#   method = "rf",
-#   trControl = trainControl(method = "cv")
-# )
-#  
-# # Make predictions on the test data
-# predictions_Top_10000 <- predict(rf_model, newdata = test_data)
-# 
-# 
-# # Extract the gene signatures from the Random Forest model.
-# # Extract variable importance
-# variable_importance <- varImp(rf_model)
-# 
-# # Get the top important genes
-# gene_Signatures_Top_10000 <- rownames(variable_importance$importance)
-# ```
+```{r}
+temp <- as.data.frame(t(expression_df))
+temp$refinebio_accession_code <- rownames(temp)
+expression_df_labeled <- merge(temp, referenceGroup, by = "refinebio_accession_code")
+rm(temp)
+rownames(expression_df_labeled) <- expression_df_labeled$refinebio_accession_code
+expression_df_labeled <- select(expression_df_labeled, -refinebio_accession_code)
+expression_df_labeled$diabetes <- factor(
+  expression_df_labeled$diabetes,
+  levels = c(0, 1), labels = c("Non-Diabetic", "Diabetic")
+)
+
+top_10000 <- select(expression_df_labeled, 1:10000, ncol(expression_df_labeled))
+
+#create classification task
+task <- TaskClassif$new(
+  "gene_exp",
+  top_10000,
+  "diabetes",
+  positive = NULL,
+  label = NA_character_,
+  extra_args = list()
+)
+
+# Split the data into training and testing sets
+split <- partition(task, ratio = 0.7)
+learner <- lrn("classif.ranger",predict_type = "prob")
+learner$train(task, split$train) #train model
+
+pred_train = learner$predict(task, row_ids=split$train)
+pred_test <- learner$predict(task, row_ids=split$test)
+
+conf_matrix <- pred_test$confusion
+
+conf_matrix
+
+#signature genes
+N <- 22
+signature_genes_RF_10000 <- names(sort(learner$model$coefficients, decreasing = T))[1:N]
+
+print(pred_test$score(msr(c("classif.tnr"))))
+print(pred_test$score(msr(c("classif.fnr"))))
+aucMsr <- msr("classif.auc")
+AUC = aucMsr$score(prediction = pred_test)
+
+TPR = conf_matrix[2,2] / (conf_matrix[2,2] + conf_matrix[1,2])  # Sensitivity or Recall: TP / (TP + FN)
+FPR = conf_matrix[2,1] / (conf_matrix[2,1] + conf_matrix[1,1])  # False Positive Rate: FP / (FP + TN)
+cat("True Positive Rate:", TPR, "\n")
+cat("False Positive Rate:", FPR, "\n")
+cat("AUC:", AUC,"\n")
+```
+
+#Random Forest Gene Overlap
+```{r}
+vectors <- list(
+  RF10=signature_genes_RF_10,
+  RF100=signature_genes_RF_100,
+  RF1000=signature_genes_RF_1000,
+  RF5000=signature_genes_RF_5000,
+  RF10000=signature_genes_RF_10000
+)
+  
+# Initialize a matrix to store the fractions
+overlap_matrix <- matrix(0, nrow = length(vectors), ncol = length(vectors))
+
+# Calculate the fractions
+for (i in 1:length(vectors)) {
+  cat(names(vectors)[i], " signature gene #: ", length(vectors[[i]]), "\n")
+  for (j in 1:length(vectors)) {
+    if (i<j) {
+      overlap_matrix[i,j]<-length(intersect(vectors[[i]], vectors[[j]])) / length(vectors[[i]])
+    }
+  }
+}
+
+cat("\n")
+
+# Display the overlap matrix
+rownames(overlap_matrix) <- colnames(overlap_matrix) <- c(
+  "RF10",
+  "RF100",
+  "RF1000",
+  "RF5000",
+  "RF10000")
+print(overlap_matrix)
+```
+
 # Perform a Fresh Load of the Data and Generate Tasks
 ```{r}
 # Read in data and metadata TSV file and make Gene column into row names
