@@ -958,8 +958,14 @@ to our target group of diabetics / nondiabetics). In order to ensure we
 satisfy the conditions of the assignment we have therefore provided two
 graphs, without and with clustering, to observe these differences.
 
+PLEASE NOTE, we do not provide individual column labels as doing so proves
+impractical. The font of the rows is intentionally small such that they do not
+intersect making them legible at the rendered resolution.
+
 ```{r}
 library(pheatmap)
+library(grid)
+setHook("grid.newpage", function() pushViewport(viewport(x=1,y=1,width=0.9, height=0.9, name="vp", just=c("right","top"))), action="prepend")
 
 pheatmap(ordered_gene_df,
          annotation_col = referenceGroup,
@@ -976,9 +982,15 @@ pheatmap(ordered_gene_df,
          color = colorRampPalette(c("black", "purple", "white"))(255), # Color scheme
          border_color = NA # No border for each cell,
 )
+
+setHook("grid.newpage", NULL, "replace")
+grid.text("Sequences", y=-0.07, gp=gpar(fontsize=16))
+grid.text("Genes", x=-0.07, rot=90, gp=gpar(fontsize=16))
 ```
 
 ```{r}
+setHook("grid.newpage", function() pushViewport(viewport(x=1,y=1,width=0.9, height=0.9, name="vp", just=c("right","top"))), action="prepend")
+
 pheatmap(ordered_gene_df,
          annotation_col = referenceGroup,
          annotation_colors = ann_colors,
@@ -994,7 +1006,12 @@ pheatmap(ordered_gene_df,
          color = colorRampPalette(c("black", "purple", "white"))(255), # Color scheme
          border_color = NA # No border for each cell,
 )
+setHook("grid.newpage", NULL, "replace")
+grid.text("Sequences", y=-0.07, gp=gpar(fontsize=16))
+grid.text("Genes", x=-0.07, rot=90, gp=gpar(fontsize=16))
 ```
+
+
 
 Admittedly the differences in the two heatmaps aren't very pronounced.
 We scale the data by gene so as to visually present the expression Z
