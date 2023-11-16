@@ -1039,14 +1039,11 @@ all_unique_genes <- Reduce(union, list(
   signature_genes_RF_1000,
   signature_genes_RF_5000,
   signature_genes_RF_10000, 
-
-# Pending Implementation from Sahas, Rayyan (either change the names here or in your code. Either way, these should be vectors of gene names. chr[1:N] "ENSG0000..., ENSG0000, ENSG1231141, ... etc")
-  
-  # signature_genes_LR_10,
-  # signature_genes_LR_100,
-  # signature_genes_LR_1000,
-  # signature_genes_LR_5000,
-  # signature_genes_LR_10000
+  signature_genes_LR_10,
+  signature_genes_LR_100,
+  signature_genes_LR_1000,
+  signature_genes_LR_5000,
+  signature_genes_LR_10000
 ))
 ```
 
@@ -1171,7 +1168,7 @@ logistic regression both perform very poorly by comparison.
 vectors <- list(
   LR5000=signature_genes_LR_5000,
   RF5000=signature_genes_RF_5000,
-  SVM5000=signature_genes_SVM_5000,
+  SVM5000=signature_genes_SVM_5000
 )
   
 # Initialize a matrix to store the fractions
